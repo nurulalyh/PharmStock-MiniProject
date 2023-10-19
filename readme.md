@@ -51,6 +51,8 @@ Pharma Stock adalah API yang dirancang untuk membantu apotek dalam mengelola sto
 
 ## ERD
 [ERD Pharm Stock](http://gg.gg/176p6f)
+![ERD Pharm Stock-Final Ver](https://github.com/nurulalyh/PharmStock-MiniProject/assets/109571028/0522edeb-79bd-46f4-b9ec-3af954a8c2d0)
+
 
 <!-- ## Format File .ENV
 ```
