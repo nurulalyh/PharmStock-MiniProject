@@ -2,10 +2,10 @@ package configs
 
 import (
 	"os"
-	"pharm-stock/helper"
 	"strconv"
 
 	"github.com/joho/godotenv"
+	"github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -25,14 +25,14 @@ func loadConfig() *Config {
 
 	var err = godotenv.Load(".ENV")
 	if err != nil {
-		helper.ErrorResponse("Config Error: Cannot load config file", err.Error())
+		logrus.Error("Config : Cannot load config file, ", err.Error())
 		return nil
 	}
 
 	if val, found := os.LookupEnv("SERVER"); found {
 		port, err := strconv.Atoi(val)
 		if err != nil {
-			helper.ErrorResponse("Config Error:  invalid server port value", err.Error())
+			logrus.Error("Config : invalid port value, ", err.Error())
 			return nil
 		}
 		res.ServerPort = port
@@ -41,7 +41,7 @@ func loadConfig() *Config {
 	if val, found := os.LookupEnv("DBPORT"); found {
 		port, err := strconv.Atoi(val)
 		if err != nil {
-			helper.ErrorResponse("Config Error:  invalid db port value", err.Error())
+			logrus.Error("Config : invalid port value, ", err.Error())
 			return nil
 		}
 		res.DBPort = port
@@ -82,7 +82,7 @@ func InitConfig() *Config {
 
 	res = loadConfig()
 	if res == nil {
-		helper.ErrorResponse("Config Error:  Cannot start program, failed to load configuration", nil)
+		logrus.Fatal("Config : Cannot start program, failed to load configuration")
 		return nil
 	}
 
