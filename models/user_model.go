@@ -36,6 +36,15 @@ func (um *UsersModel) InitUsersModel(db *gorm.DB) {
 	um.db = db
 }
 
+func (um *UsersModel) CreateUser(newUser User) *User {
+	if err := um.db.Create(&newUser).Error; err != nil {
+		logrus.Error("Model : Insert data error, ", err.Error())
+		return nil
+	}
+
+	return &newUser
+}
+
 func (um *UsersModel) Login(username string, password string) *User {
 	var data = User{}
 	if err := um.db.Where("username = ?", username).First(&data).Error; err != nil {

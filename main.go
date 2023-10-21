@@ -20,12 +20,9 @@ func main() {
 
 	userModel := models.UsersModel{}
 	userModel.InitUsersModel(db)
-	// barangModel := model.NewBarangModel(db)
-
+	
 	userController := controllers.UserController{}
 	userController.InitUserController(userModel, *config)
-
-	// barangControll := controller.NewBarangControllInterface(barangModel)
 
 	e.Pre(middleware.RemoveTrailingSlash())
 
@@ -36,7 +33,6 @@ func main() {
 		}))
 
 	routes.RouteUser(e, userController, *config)
-	// routes.RouteBarang(e, barangControll, *config)
-
+	
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", config.ServerPort)).Error())
 }
