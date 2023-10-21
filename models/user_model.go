@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -20,4 +21,31 @@ type User struct {
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deleted_at" form:"deleted_at"`
 	Transactions []Transaction  `gorm:"foreignKey:IdUser;references:Id"`
 	ReqProducts  []ReqProduct   `gorm:"foreignKey:IdUser;references:Id"`
+}
+
+type Login struct {
+	Username string `json:"username" form:"username"`
+	Password string `json:"password" form:"password"`
+}
+
+type UsersModel struct {
+	db *gorm.DB
+}
+
+func (um *UsersModel) InitUsersModel(db *gorm.DB) {
+	um.db = db
+}
+
+func (um *UsersModel) Login(username string, password string) *User {
+	var data = User{}
+	if err := um.db.Where("username = ?", username).First(&data).Error; err != nil {
+		logrus.Error("Model : Login data error, ", err.Error())
+		return nil
+	}
+	if data.Id == 0 {
+		logrus.Error("Model : Login data error, ", nil)
+		return nil
+	}
+
+	return &data
 }
