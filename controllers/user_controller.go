@@ -19,6 +19,22 @@ func (uc *UserController) InitUserController(um models.UsersModel, cfg configs.C
 	uc.model = um
 }
 
+func (uc *UserController) CreateUser() echo.HandlerFunc {
+	return func (c echo.Context) error {
+		var input = models.User{}
+		if err := c.Bind(&input); err != nil {
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid user input", nil))
+		}
+
+		var res = uc.model.CreateUser(input)
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", nil))
+		}
+
+		return c.JSON(http.StatusCreated, helper.FormatResponse("success create user", res))
+	}
+}
+
 func (uc *UserController) Login() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var input = models.Login{}
@@ -50,6 +66,6 @@ func (uc *UserController) Login() echo.HandlerFunc {
 		
 		jwtToken["info"] = info
 
-		return c.JSON(http.StatusOK, helper.FormatResponse("success", jwtToken))
+		return c.JSON(http.StatusOK, helper.FormatResponse("login success", jwtToken))
 	}
 }

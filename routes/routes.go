@@ -10,5 +10,6 @@ import (
 func RouteUser(e *echo.Echo, uc controllers.UserController, cfg configs.Config) {
 	var user = e.Group("/users")
 
+	user.POST("", uc.CreateUser())
 	user.POST("/login", uc.Login())
 }
