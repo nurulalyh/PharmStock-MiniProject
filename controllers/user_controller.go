@@ -9,24 +9,31 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type UserController struct {
-	config configs.Config
-	model  models.UsersModel
+type UserControllerInterface interface {
+	CreateUser() echo.HandlerFunc
+	Login() echo.HandlerFunc
+	GetAllUsers() echo.HandlerFunc
 }
 
-func (uc *UserController) InitUserController(um models.UsersModel, cfg configs.Config) {
-	uc.config = cfg
-	uc.model = um
+type UserController struct {
+	config configs.Config
+	model models.UserModelInterface
+}
+
+func NewUserControlInterface(m models.UserModelInterface) UserControllerInterface {
+	return &UserController{
+		model: m,
+	}
 }
 
 func (uc *UserController) CreateUser() echo.HandlerFunc {
-	return func (c echo.Context) error {
+	return func(c echo.Context) error {
 		var input = models.User{}
 		if err := c.Bind(&input); err != nil {
 			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid user input", nil))
 		}
 
-		var res = uc.model.CreateUser(input)
+		var res = uc.model.Insert(input)
 		if res == nil {
 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", nil))
 		}
@@ -63,9 +70,32 @@ func (uc *UserController) Login() echo.HandlerFunc {
 		info["name"] = res.Name
 		info["username"] = res.Username
 		info["role"] = res.Role
-		
+
 		jwtToken["info"] = info
 
 		return c.JSON(http.StatusOK, helper.FormatResponse("login success", jwtToken))
 	}
 }
+
+func (uc *UserController) GetAllUsers() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var res = uc.model.SelectAll()
+
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all users, ", nil))
+		}
+
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all users, ", res))
+	}
+}
+
+// func (uc *UserController) GetUserById() echo.HandlerFunc {
+// 	return func(c echo.Context) error {
+// 		var userId = models.User{}
+// 		var res = uc.model.SelectById(userId.Id)
+		
+// 		if res == nil {
+// 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get user by id, ", nil))
+// 		}
+// 	}
+// }

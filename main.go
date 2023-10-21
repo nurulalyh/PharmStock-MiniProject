@@ -18,11 +18,9 @@ func main() {
 	db := models.InitModel(*config)
 	models.Migrate(db)
 
-	userModel := models.UsersModel{}
-	userModel.InitUsersModel(db)
+	userModel := models.NewUsersModel(db)
 	
-	userController := controllers.UserController{}
-	userController.InitUserController(userModel, *config)
+	userController := controllers.NewUserControlInterface(userModel)
 
 	e.Pre(middleware.RemoveTrailingSlash())
 

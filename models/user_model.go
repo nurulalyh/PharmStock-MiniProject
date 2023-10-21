@@ -28,6 +28,13 @@ type Login struct {
 	Password string `json:"password" form:"password"`
 }
 
+type UserModelInterface interface {
+	Login(username string, password string) *User
+	Insert(newItem User) *User
+	SelectAll() []User
+	// SelectById(userId int) *User
+}
+
 type UsersModel struct {
 	db *gorm.DB
 }
@@ -36,13 +43,10 @@ func (um *UsersModel) InitUsersModel(db *gorm.DB) {
 	um.db = db
 }
 
-func (um *UsersModel) CreateUser(newUser User) *User {
-	if err := um.db.Create(&newUser).Error; err != nil {
-		logrus.Error("Model : Insert data error, ", err.Error())
-		return nil
+func NewUsersModel(db *gorm.DB) UserModelInterface {
+	return &UsersModel{
+		db: db,
 	}
-
-	return &newUser
 }
 
 func (um *UsersModel) Login(username string, password string) *User {
@@ -58,3 +62,32 @@ func (um *UsersModel) Login(username string, password string) *User {
 
 	return &data
 }
+
+func (um *UsersModel) Insert(newUser User) *User {
+	if err := um.db.Create(&newUser).Error; err != nil {
+		logrus.Error("Model : Insert data error, ", err.Error())
+		return nil
+	}
+
+	return &newUser
+}
+
+func (um *UsersModel) SelectAll() []User {
+	var data = []User{}
+	if err := um.db.Find(&data).Error; err != nil {
+		logrus.Error("Model : Error get all users, ", err.Error())
+		return nil
+	}
+
+	return data
+}
+
+// func (um *UsersModel) SelectById(userId int) *User {
+// 	var data = User{}
+// 	if err := um.db.Where("id = ?", userId).First(&data).Error; err != nil {
+// 		logrus.Error("Model : Error get user by id, ", err.Error())
+// 		return nil
+// 	}
+
+// 	return &data
+// }
