@@ -1,12 +1,11 @@
 package helper
 
-func ErrorResponse (status string, message any) map[string]any {
+func FormatResponse(message string, data any) map[string]any {
 	var response = map[string]any{}
 
-	response["status"] = status
-	if message != nil {
-		response["message"] = message
+	response["message"] = message
+	if data != nil {
+		response["data"] = data
 	}
-
 	return response
 }
