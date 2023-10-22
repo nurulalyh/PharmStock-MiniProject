@@ -34,6 +34,7 @@ type UserModelInterface interface {
 	Insert(newItem User) *User
 	SelectAll() []User
 	SelectById(userId int) *User
+	Update(updatedData User) *User
 }
 
 // Interaction with db
@@ -74,7 +75,7 @@ func (um *UsersModel) Insert(newUser User) *User {
 func (um *UsersModel) SelectAll() []User {
 	var data = []User{}
 	if err := um.db.Find(&data).Error; err != nil {
-		logrus.Error("Model : Error get all users, ", err.Error())
+		logrus.Error("Model : Cannot get all users, ", err.Error())
 		return nil
 	}
 
@@ -84,9 +85,54 @@ func (um *UsersModel) SelectAll() []User {
 func (um *UsersModel) SelectById(userId int) *User {
 	var data = User{}
 	if err := um.db.Where("id = ?", userId).First(&data).Error; err != nil {
-		logrus.Error("Model : Error get user by id, ", err.Error())
+		logrus.Error("Model : Data with that ID was not found, ", err.Error())
 		return nil
 	}
 
 	return &data
+}
+
+func (um *UsersModel) Update(updatedData User) *User {
+	var data map[string]interface{} = make(map[string]interface{})
+
+	if updatedData.Name != "" {
+		data["name"] = updatedData.Name
+	}
+	if updatedData.Username != "" {
+		data["username"] = updatedData.Username
+	}
+	if updatedData.Password != "" {
+		data["password"] = updatedData.Password
+	}
+	if updatedData.Email != "" {
+		data["email"] = updatedData.Email
+	}
+	if updatedData.Phone != "" {
+		data["phone"] = updatedData.Phone
+	}
+	if updatedData.Address != "" {
+		data["address"] = updatedData.Address
+	}
+	if updatedData.Role != "" {
+		data["role"] = updatedData.Role
+	}
+
+	var qry = um.db.Table("users").Where("id = ?", updatedData.Id).Updates(data)
+	if err := qry.Error; err != nil {
+		logrus.Error("Model : update error, ", err.Error())
+		return nil
+	}
+
+	if dataCount := qry.RowsAffected; dataCount < 1 {
+		logrus.Error("Model : Update error, ", "no data effected")
+		return nil
+	}
+
+	var updatedUser = User{}
+	if err := um.db.Where("id = ?", updatedData.Id).First(&updatedUser).Error; err != nil {
+		logrus.Error("Model : Error get updated data, ", err.Error())
+		return nil
+	}
+
+	return &updatedUser
 }
