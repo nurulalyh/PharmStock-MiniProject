@@ -11,6 +11,7 @@ import (
 
 type CatProductControllerInterface interface {
 	CreateCatProduct() echo.HandlerFunc
+	GetAllCatProduct() echo.HandlerFunc
 }
 
 type CatProductController struct {
@@ -37,5 +38,17 @@ func (cpc *CatProductController) CreateCatProduct() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusCreated, helper.FormatResponse("success create category product", res))
+	}
+}
+
+func (cpc *CatProductController) GetAllCatProduct() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var res = cpc.model.SelectAll()
+
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all category product, ", nil))
+		}
+
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all category product, ", res))
 	}
 }
