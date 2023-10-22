@@ -19,8 +19,10 @@ func main() {
 	models.Migrate(db)
 
 	userModel := models.NewUsersModel(db)
+	catProductModel := models.NewCatProductsModel(db)
 	
 	userController := controllers.NewUserControlInterface(userModel)
+	catProductController := controllers.NewCatProductControllerInterface(catProductModel)
 
 	e.Pre(middleware.RemoveTrailingSlash())
 
@@ -31,6 +33,7 @@ func main() {
 		}))
 
 	routes.RouteUser(e, userController, *config)
+	routes.RouteCatProduct(e, catProductController, *config)
 	
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", config.ServerPort)).Error())
 }
