@@ -15,7 +15,7 @@ type User struct {
 	Email        string         `gorm:"type:varchar(50);not null" json:"email" form:"email"`
 	Phone        string         `gorm:"type:varchar(15);not null" json:"phone" form:"phone"`
 	Address      string         `gorm:"type:varchar(255);not null" json:"address" form:"address"`
-	Role         string         `gorm:"type:varchar(25);not null" json:"role" form:"role"`
+	Role         string         `gorm:"type:ENUM('administrator','apoteker');not null" json:"role" form:"role"`
 	CreatedAt    time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"created_at" form:"created_at"`
 	UpdatedAt    time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"updated_at" form:"updated_at"`
 	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deleted_at" form:"deleted_at"`
