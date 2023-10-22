@@ -5,6 +5,7 @@ import (
 	"pharm-stock/configs"
 	"pharm-stock/helper"
 	"pharm-stock/models"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 )
@@ -13,6 +14,7 @@ type UserControllerInterface interface {
 	CreateUser() echo.HandlerFunc
 	Login() echo.HandlerFunc
 	GetAllUsers() echo.HandlerFunc
+	GetUserById() echo.HandlerFunc
 }
 
 type UserController struct {
@@ -89,13 +91,20 @@ func (uc *UserController) GetAllUsers() echo.HandlerFunc {
 	}
 }
 
-// func (uc *UserController) GetUserById() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 		var userId = models.User{}
-// 		var res = uc.model.SelectById(userId.Id)
-		
-// 		if res == nil {
-// 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get user by id, ", nil))
-// 		}
-// 	}
-// }
+func (uc *UserController) GetUserById() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var paramId = c.Param("id")
+
+		cnv, err := strconv.Atoi(paramId)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
+		}
+
+		var res = uc.model.SelectById(cnv)
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get user by id, ", nil))
+		}
+
+		return c.JSON(http.StatusOK, helper.FormatResponse("Succes get user", res))
+	}
+}
