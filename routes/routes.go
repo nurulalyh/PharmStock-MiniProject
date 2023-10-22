@@ -23,7 +23,7 @@ func RouteCatProduct(e *echo.Echo, cpc controllers.CatProductControllerInterface
 
 	user.POST("", cpc.CreateCatProduct())
 	user.GET("", cpc.GetAllCatProduct())
-	// user.GET("/:id", cpc.GetUserById())
+	user.GET("/:id", cpc.GetCatProductById())
 	// user.PUT("/:id", cpc.UpdateUser())
 	// user.DELETE("/:id", cpc.DeleteUser())
 }

@@ -5,6 +5,7 @@ import (
 	"pharm-stock/configs"
 	"pharm-stock/helper"
 	"pharm-stock/models"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 )
@@ -12,6 +13,7 @@ import (
 type CatProductControllerInterface interface {
 	CreateCatProduct() echo.HandlerFunc
 	GetAllCatProduct() echo.HandlerFunc
+	GetCatProductById() echo.HandlerFunc
 }
 
 type CatProductController struct {
@@ -50,5 +52,23 @@ func (cpc *CatProductController) GetAllCatProduct() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all category product, ", res))
+	}
+}
+
+func (cpc *CatProductController) GetCatProductById() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var paramId = c.Param("id")
+
+		cnv, err := strconv.Atoi(paramId)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
+		}
+
+		var res = cpc.model.SelectById(cnv)
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get category product by id, ", nil))
+		}
+
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success get category product", res))
 	}
 }
