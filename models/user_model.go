@@ -35,6 +35,7 @@ type UserModelInterface interface {
 	SelectAll() []User
 	SelectById(userId int) *User
 	Update(updatedData User) *User
+	Delete(userId int) bool
 }
 
 // Interaction with db
@@ -135,4 +136,21 @@ func (um *UsersModel) Update(updatedData User) *User {
 	}
 
 	return &updatedUser
+}
+
+func (um *UsersModel) Delete(userId int) bool {
+	var data = User{}
+	data.Id = userId
+
+	if err := um.db.Where("id = ?", userId).First(&data).Error; err != nil {
+        logrus.Error("Model: Error finding data to delete, ", err.Error())
+        return false
+    }
+	
+	if err := um.db.Delete(&data).Error; err != nil {
+	  logrus.Error("Model : Error delete data, ", err.Error())
+	  return false
+	}
+  
+	return true
 }
