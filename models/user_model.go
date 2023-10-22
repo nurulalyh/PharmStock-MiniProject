@@ -28,21 +28,20 @@ type Login struct {
 	Password string `json:"password" form:"password"`
 }
 
+// Declaration Contract
 type UserModelInterface interface {
 	Login(username string, password string) *User
 	Insert(newItem User) *User
 	SelectAll() []User
-	// SelectById(userId int) *User
+	SelectById(userId int) *User
 }
 
+// Interaction with db
 type UsersModel struct {
 	db *gorm.DB
 }
 
-func (um *UsersModel) InitUsersModel(db *gorm.DB) {
-	um.db = db
-}
-
+// New Instance from UsersModel
 func NewUsersModel(db *gorm.DB) UserModelInterface {
 	return &UsersModel{
 		db: db,
@@ -82,12 +81,12 @@ func (um *UsersModel) SelectAll() []User {
 	return data
 }
 
-// func (um *UsersModel) SelectById(userId int) *User {
-// 	var data = User{}
-// 	if err := um.db.Where("id = ?", userId).First(&data).Error; err != nil {
-// 		logrus.Error("Model : Error get user by id, ", err.Error())
-// 		return nil
-// 	}
+func (um *UsersModel) SelectById(userId int) *User {
+	var data = User{}
+	if err := um.db.Where("id = ?", userId).First(&data).Error; err != nil {
+		logrus.Error("Model : Error get user by id, ", err.Error())
+		return nil
+	}
 
-// 	return &data
-// }
+	return &data
+}
