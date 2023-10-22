@@ -16,6 +16,7 @@ type UserControllerInterface interface {
 	GetAllUsers() echo.HandlerFunc
 	GetUserById() echo.HandlerFunc
 	UpdateUser() echo.HandlerFunc
+	DeleteUser() echo.HandlerFunc
 }
 
 type UserController struct {
@@ -131,5 +132,23 @@ func (uc *UserController) UpdateUser() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", res))
+	}
+}
+
+func (uc *UserController) DeleteUser() echo.HandlerFunc {
+	return func(c echo.Context) error {
+	  var paramId = c.Param("id")
+  
+	  cnv, err := strconv.Atoi(paramId)
+	  if err != nil {
+		return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
+	  }
+  
+	  success := uc.model.Delete(cnv)
+	  if !success {
+		return c.JSON(http.StatusNotFound, helper.FormatResponse("User not found", nil))
+	  }
+  
+	  return c.JSON(http.StatusOK, helper.FormatResponse("Success delete user", nil))
 	}
 }
