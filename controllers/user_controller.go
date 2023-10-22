@@ -15,11 +15,12 @@ type UserControllerInterface interface {
 	Login() echo.HandlerFunc
 	GetAllUsers() echo.HandlerFunc
 	GetUserById() echo.HandlerFunc
+	UpdateUser() echo.HandlerFunc
 }
 
 type UserController struct {
 	config configs.Config
-	model models.UserModelInterface
+	model  models.UserModelInterface
 }
 
 func NewUserControlInterface(m models.UserModelInterface) UserControllerInterface {
@@ -105,6 +106,30 @@ func (uc *UserController) GetUserById() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get user by id, ", nil))
 		}
 
-		return c.JSON(http.StatusOK, helper.FormatResponse("Succes get user", res))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success get user", res))
+	}
+}
+
+func (uc *UserController) UpdateUser() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var paramId = c.Param("id")
+		cnv, err := strconv.Atoi(paramId)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
+		}
+
+		var input = models.User{}
+		if err := c.Bind(&input); err != nil {
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid user input", nil))
+		}
+
+		input.Id = cnv
+
+		var res = uc.model.Update(input)
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", nil))
+		}
+
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", res))
 	}
 }
