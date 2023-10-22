@@ -14,4 +14,5 @@ func RouteUser(e *echo.Echo, uc controllers.UserControllerInterface, cfg configs
 	user.POST("/login", uc.Login())
 	user.GET("", uc.GetAllUsers())
 	user.GET("/:id", uc.GetUserById())
+	user.PUT("/:id", uc.UpdateUser())
 }
