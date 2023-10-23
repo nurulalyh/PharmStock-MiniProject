@@ -19,9 +19,9 @@ type CatProduct struct {
 type CatProductModelInterface interface {
 	Insert(newCatProduct CatProduct) *CatProduct
 	SelectAll() []CatProduct
-	SelectById(carProductId int) *CatProduct
+	SelectById(catProductId int) *CatProduct
 	Update(updatedData CatProduct) *CatProduct
-	Delete(userId int) bool
+	Delete(catProductId int) bool
 }
 
 type CatProductsModel struct {
