@@ -50,9 +50,11 @@ Pharma Stock adalah API yang dirancang untuk membantu apotek dalam mengelola sto
 10. Other Tools 		: Cloudinary untuk upload foto
 
 ## ERD
-[ERD Pharm Stock](http://gg.gg/176p6f)
-![ERD Pharm Stock-Final Ver](https://github.com/nurulalyh/PharmStock-MiniProject/assets/109571028/0522edeb-79bd-46f4-b9ec-3af954a8c2d0)
+[ERD Pharm Stock](http://gg.gg/178lv4)
+![ERD Pharm Stock-Final Ver (1)](https://github.com/nurulalyh/PharmStock-MiniProject/assets/109571028/408459f1-17e0-45a2-b5ed-876427808d5e)
 
+## API Documentation
+[Postman](https://www.postman.com/cryosat-observer-7678182/workspace/my-workspace/collection/23286472-024b6f57-46e8-4f3d-b9aa-939e4eb1b6f4?action=share&creator=23286472)
 
 <!-- ## Format File .ENV
 ```
