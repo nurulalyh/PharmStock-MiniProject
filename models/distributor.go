@@ -19,6 +19,7 @@ type Distributor struct {
 type DistributorModelInterface interface {
 	Insert(newDistributor Distributor) *Distributor	
 	SelectAll() []Distributor
+	SelectById(distributorId int) *Distributor
 }
 
 type DistributorsModel struct {
@@ -48,4 +49,14 @@ func (dm *DistributorsModel) SelectAll() []Distributor {
 	}
 
 	return data
+}
+
+func (dm *DistributorsModel) SelectById(distributorId int) *Distributor {
+	var data = Distributor{}
+	if err := dm.db.Where("id = ?", distributorId).First(&data).Error; err != nil {
+		logrus.Error("Model : Data with that ID was not found, ", err.Error())
+		return nil
+	}
+
+	return &data
 }
