@@ -14,6 +14,7 @@ type CatProductControllerInterface interface {
 	CreateCatProduct() echo.HandlerFunc
 	GetAllCatProduct() echo.HandlerFunc
 	GetCatProductById() echo.HandlerFunc
+	UpdateCatProduct() echo.HandlerFunc
 }
 
 type CatProductController struct {
@@ -70,5 +71,29 @@ func (cpc *CatProductController) GetCatProductById() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, helper.FormatResponse("Success get category product", res))
+	}
+}
+
+func (cpc *CatProductController) UpdateCatProduct() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var paramId = c.Param("id")
+		cnv, err := strconv.Atoi(paramId)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
+		}
+
+		var input = models.CatProduct{}
+		if err := c.Bind(&input); err != nil {
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid category product input", nil))
+		}
+
+		input.Id = cnv
+
+		var res = cpc.model.Update(input)
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", nil))
+		}
+
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", res))
 	}
 }
