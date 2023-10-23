@@ -5,6 +5,7 @@ import (
 	"pharm-stock/configs"
 	"pharm-stock/helper"
 	"pharm-stock/models"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 )
@@ -12,6 +13,7 @@ import (
 type DistributorControllerInterface interface {
 	CreateDistributor() echo.HandlerFunc
 	GetAllDistributor() echo.HandlerFunc
+	GetDistributorById() echo.HandlerFunc
 }
 
 type DistributorController struct {
@@ -50,5 +52,23 @@ func (dc *DistributorController) GetAllDistributor() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all distributor, ", res))
+	}
+}
+
+func (dc *DistributorController) GetDistributorById() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var paramId = c.Param("id")
+
+		cnv, err := strconv.Atoi(paramId)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
+		}
+
+		var res = dc.model.SelectById(cnv)
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get distributor by id, ", nil))
+		}
+
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success get distributor", res))
 	}
 }
