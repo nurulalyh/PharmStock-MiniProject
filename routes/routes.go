@@ -27,3 +27,13 @@ func RouteCatProduct(e *echo.Echo, cpc controllers.CatProductControllerInterface
 	user.PUT("/:id", cpc.UpdateCatProduct())
 	user.DELETE("/:id", cpc.DeleteCatProduct())
 }
+
+func RouteDistributor(e *echo.Echo, dc controllers.DistributorControllerInterface, cfg configs.Config) {
+	var user = e.Group("/distributor")
+
+	user.POST("", dc.CreateDistributor())
+	// user.GET("", dc.GetAllCatProduct())
+	// user.GET("/:id", dc.GetCatProductById())
+	// user.PUT("/:id", dc.UpdateCatProduct())
+	// user.DELETE("/:id", dc.DeleteCatProduct())
+}
