@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -13,4 +14,27 @@ type Distributor struct {
 	UpdatedAt time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"updated_at" form:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at" form:"deleted_at"`
 	DetailProducts []DetailProduct `gorm:"foreignKey:IdDistributor;references:Id"`
+}
+
+type DistributorModelInterface interface {
+	Insert(newDistributor Distributor) *Distributor	
+}
+
+type DistributorsModel struct {
+	db *gorm.DB
+}
+
+func NewDistributorsModel(db *gorm.DB) DistributorModelInterface {
+	return &DistributorsModel {
+		db: db,
+	}
+}
+
+func (dm *DistributorsModel) Insert(newDistributor Distributor) *Distributor {
+	if err := dm.db.Create(&newDistributor).Error; err != nil {
+		logrus.Error("Model : Insert data error, ", err.Error())
+		return nil
+	}
+
+	return &newDistributor
 }
