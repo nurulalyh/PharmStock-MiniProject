@@ -34,6 +34,6 @@ func RouteDistributor(e *echo.Echo, dc controllers.DistributorControllerInterfac
 	user.POST("", dc.CreateDistributor())
 	user.GET("", dc.GetAllDistributor())
 	user.GET("/:id", dc.GetDistributorById())
-	// user.PUT("/:id", dc.UpdateDistributor())
-	// user.DELETE("/:id", dc.DeleteDistributor())
+	user.PUT("/:id", dc.UpdateDistributor())
+	user.DELETE("/:id", dc.DeleteDistributor())
 }

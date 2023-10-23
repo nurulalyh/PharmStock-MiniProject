@@ -14,6 +14,8 @@ type DistributorControllerInterface interface {
 	CreateDistributor() echo.HandlerFunc
 	GetAllDistributor() echo.HandlerFunc
 	GetDistributorById() echo.HandlerFunc
+	UpdateDistributor() echo.HandlerFunc
+	DeleteDistributor() echo.HandlerFunc
 }
 
 type DistributorController struct {
@@ -70,5 +72,47 @@ func (dc *DistributorController) GetDistributorById() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, helper.FormatResponse("Success get distributor", res))
+	}
+}
+
+func (dc *DistributorController) UpdateDistributor() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var paramId = c.Param("id")
+		cnv, err := strconv.Atoi(paramId)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
+		}
+
+		var input = models.Distributor{}
+		if err := c.Bind(&input); err != nil {
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid distributor input", nil))
+		}
+
+		input.Id = cnv
+
+		var res = dc.model.Update(input)
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", nil))
+		}
+
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", res))
+	}
+}
+
+func (dc *DistributorController) DeleteDistributor() echo.HandlerFunc {
+	return func(c echo.Context) error {
+	  var paramId = c.Param("id")
+  
+	  cnv, err := strconv.Atoi(paramId)
+	  if err != nil {
+		return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
+	  }
+  
+	  success := dc.model.Delete(cnv)
+	  if !success {
+		return c.JSON(http.StatusNotFound, helper.FormatResponse("distributor not found", nil))
+	  }
+  
+	  return c.JSON(http.StatusOK, helper.FormatResponse("Success delete distributor", nil))
 	}
 }
