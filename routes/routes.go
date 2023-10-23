@@ -29,11 +29,21 @@ func RouteCatProduct(e *echo.Echo, cpc controllers.CatProductControllerInterface
 }
 
 func RouteDistributor(e *echo.Echo, dc controllers.DistributorControllerInterface, cfg configs.Config) {
-	var user = e.Group("/distributor")
+	var user = e.Group("/distributors")
 
 	user.POST("", dc.CreateDistributor())
 	user.GET("", dc.GetAllDistributor())
 	user.GET("/:id", dc.GetDistributorById())
 	user.PUT("/:id", dc.UpdateDistributor())
 	user.DELETE("/:id", dc.DeleteDistributor())
+}
+
+func RouteReqProduct(e *echo.Echo, rpc controllers.ReqProductControllerInterface, cfg configs.Config) {
+	var user = e.Group("/reqproducts")
+
+	user.POST("", rpc.CreateReqProduct())
+	user.GET("", rpc.GetAllReqProduct())
+	user.GET("/:id", rpc.GetReqProductById())
+	user.PUT("/:id", rpc.UpdateReqProduct())
+	user.DELETE("/:id", rpc.DeleteReqProduct())
 }
