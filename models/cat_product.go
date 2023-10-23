@@ -84,11 +84,11 @@ func (cpm *CatProductsModel) Update(updatedData CatProduct) *CatProduct {
 	return &updatedCatProduct
 }
 
-func (cpm *CatProductsModel) Delete(userId int) bool {
-	var data = User{}
-	data.Id = userId
+func (cpm *CatProductsModel) Delete(catProductId int) bool {
+	var data = CatProduct{}
+	data.Id = catProductId
 
-	if err := cpm.db.Where("id = ?", userId).First(&data).Error; err != nil {
+	if err := cpm.db.Where("id = ?", catProductId).First(&data).Error; err != nil {
 		logrus.Error("Model: Error finding data to delete, ", err.Error())
 		return false
 	}

@@ -15,6 +15,7 @@ type CatProductControllerInterface interface {
 	GetAllCatProduct() echo.HandlerFunc
 	GetCatProductById() echo.HandlerFunc
 	UpdateCatProduct() echo.HandlerFunc
+	DeleteCatProduct() echo.HandlerFunc
 }
 
 type CatProductController struct {
@@ -95,5 +96,23 @@ func (cpc *CatProductController) UpdateCatProduct() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", res))
+	}
+}
+
+func (cpc *CatProductController) DeleteCatProduct() echo.HandlerFunc {
+	return func(c echo.Context) error {
+	  var paramId = c.Param("id")
+  
+	  cnv, err := strconv.Atoi(paramId)
+	  if err != nil {
+		return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
+	  }
+  
+	  success := cpc.model.Delete(cnv)
+	  if !success {
+		return c.JSON(http.StatusNotFound, helper.FormatResponse("Category product not found", nil))
+	  }
+  
+	  return c.JSON(http.StatusOK, helper.FormatResponse("Success delete category product", nil))
 	}
 }
