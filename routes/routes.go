@@ -32,8 +32,8 @@ func RouteDistributor(e *echo.Echo, dc controllers.DistributorControllerInterfac
 	var user = e.Group("/distributor")
 
 	user.POST("", dc.CreateDistributor())
-	// user.GET("", dc.GetAllCatProduct())
-	// user.GET("/:id", dc.GetCatProductById())
-	// user.PUT("/:id", dc.UpdateCatProduct())
-	// user.DELETE("/:id", dc.DeleteCatProduct())
+	user.GET("", dc.GetAllDistributor())
+	// user.GET("/:id", dc.GetDistributorById())
+	// user.PUT("/:id", dc.UpdateDistributor())
+	// user.DELETE("/:id", dc.DeleteDistributor())
 }
