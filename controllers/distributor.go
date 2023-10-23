@@ -11,6 +11,7 @@ import (
 
 type DistributorControllerInterface interface {
 	CreateDistributor() echo.HandlerFunc
+	GetAllDistributor() echo.HandlerFunc
 }
 
 type DistributorController struct {
@@ -37,5 +38,17 @@ func (dc *DistributorController) CreateDistributor() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusCreated, helper.FormatResponse("success create distributor", res))
+	}
+}
+
+func (dc *DistributorController) GetAllDistributor() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var res = dc.model.SelectAll()
+
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all distributor, ", nil))
+		}
+
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all distributor, ", res))
 	}
 }
