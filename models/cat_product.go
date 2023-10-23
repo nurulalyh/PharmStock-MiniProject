@@ -64,7 +64,7 @@ func (cpm *CatProductsModel) SelectById(catProductId int) *CatProduct {
 }
 
 func (cpm *CatProductsModel) Update(updatedData CatProduct) *CatProduct {
-	var qry = cpm.db.Table("users").Where("id = ?", updatedData.Id).Update("name", updatedData.Name)
+	var qry = cpm.db.Table("cat_products").Where("id = ?", updatedData.Id).Update("name", updatedData.Name)
 	if err := qry.Error; err != nil {
 		logrus.Error("Model : update error, ", err.Error())
 		return nil
