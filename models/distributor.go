@@ -18,6 +18,7 @@ type Distributor struct {
 
 type DistributorModelInterface interface {
 	Insert(newDistributor Distributor) *Distributor	
+	SelectAll() []Distributor
 }
 
 type DistributorsModel struct {
@@ -37,4 +38,14 @@ func (dm *DistributorsModel) Insert(newDistributor Distributor) *Distributor {
 	}
 
 	return &newDistributor
+}
+
+func (dm *DistributorsModel) SelectAll() []Distributor {
+	var data = []Distributor{}
+	if err := dm.db.Find(&data).Error; err != nil {
+		logrus.Error("Model : Cannot get all distributor, ", err.Error())
+		return nil
+	}
+
+	return data
 }
