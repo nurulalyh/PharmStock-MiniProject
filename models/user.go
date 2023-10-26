@@ -67,7 +67,7 @@ func (um *UsersModel) Login(username string, password string) (*Users, error) {
 // Insert User
 func (um *UsersModel) Insert(newUser Users) (*Users, error) {
 	var latestUser Users
-	if errSort := um.db.Order("id DESC").First(&latestUser).Error; errSort != nil {
+	if errSort := um.db.Unscoped().Order("id DESC").First(&latestUser).Error; errSort != nil {
 		return nil, errors.New("Error filter data, " + errSort.Error())
 	}
 
