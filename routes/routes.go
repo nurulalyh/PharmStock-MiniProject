@@ -22,15 +22,15 @@ func RouteUser(e *echo.Echo, uc controllers.UsersControllerInterface, cfg config
 	user.GET("/search", uc.SearchUsers())
 }
 
-// func RouteCatProduct(e *echo.Echo, cpc controllers.CatProductControllerInterface, cfg configs.Config) {
-// 	var user = e.Group("/catproducts")
+func RouteCatProduct(e *echo.Echo, cpc controllers.CatProductsControllerInterface, cfg configs.Config) {
+	var catProduct = e.Group("/catproducts")
 
-// 	user.POST("", cpc.CreateCatProduct())
-// 	user.GET("", cpc.GetAllCatProduct())
-// 	user.GET("/:id", cpc.GetCatProductById())
-// 	user.PUT("/:id", cpc.UpdateCatProduct())
-// 	user.DELETE("/:id", cpc.DeleteCatProduct())
-// }
+	catProduct.POST("", cpc.CreateCatProduct())
+	catProduct.GET("", cpc.GetAllCatProduct())
+	catProduct.PUT("/:id", cpc.UpdateCatProduct())
+	catProduct.DELETE("/:id", cpc.DeleteCatProduct())
+	catProduct.GET("/search", cpc.SearchCatProduct())
+}
 
 // func RouteDistributor(e *echo.Echo, dc controllers.DistributorControllerInterface, cfg configs.Config) {
 // 	var user = e.Group("/distributors")

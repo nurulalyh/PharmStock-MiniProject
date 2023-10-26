@@ -19,12 +19,12 @@ func main() {
 	models.Migrate(db)
 
 	userModel := models.NewUsersModel(db)
-	// catProductModel := models.NewCatProductsModel(db)
+	catProductModel := models.NewCatProductsModel(db)
 	// distributorModel := models.NewDistributorsModel(db)
 	// reqProductModel := models.NewReqProductsModel(db)
 
 	userController := controllers.NewUsersControlInterface(userModel)
-	// catProductController := controllers.NewCatProductControllerInterface(catProductModel)
+	catProductController := controllers.NewCatProductsControllerInterface(catProductModel)
 	// distributorController := controllers.NewDistributorControllerInterface(distributorModel)
 	// reqProductController := controllers.NewReqProductControllerInterface(reqProductModel)
 
@@ -37,7 +37,7 @@ func main() {
 		}))
 
 	routes.RouteUser(e, userController, *config)
-	// routes.RouteCatProduct(e, catProductController, *config)
+	routes.RouteCatProduct(e, catProductController, *config)
 	// routes.RouteDistributor(e, distributorController, *config)
 	// routes.RouteReqProduct(e, reqProductController, *config)
 
