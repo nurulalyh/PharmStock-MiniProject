@@ -130,12 +130,26 @@ func (uc *UsersController) GetAllUsers() echo.HandlerFunc {
 		offset, _ := strconv.Atoi(c.QueryParam("offset"))
 
 		var res, err = uc.model.SelectAll(limit, offset)
-
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Error get all users", err.Error()))
 		}
 
-		return c.JSON(http.StatusOK, response.FormatResponse("Success get all users", res))
+		getAllResponse := response.UsersResponse{}
+		for _, user := range res{
+			getAllResponse.Id = user.Id
+			getAllResponse.Name = user.Name
+			getAllResponse.Username = user.Username
+			getAllResponse.Password = user.Password
+			getAllResponse.Email = user.Email
+			getAllResponse.Phone = user.Phone
+			getAllResponse.Address = user.Address
+			getAllResponse.Role = user.Role
+			getAllResponse.CreatedAt = user.CreatedAt
+			getAllResponse.UpdatedAt = user.UpdatedAt
+			getAllResponse.DeletedAt = user.DeletedAt
+		}
+
+		return c.JSON(http.StatusOK, response.FormatResponse("Success get all users", getAllResponse))
 	}
 }
 
@@ -172,7 +186,6 @@ func (uc *UsersController) UpdateUser() echo.HandlerFunc {
 	}
 }
 
-
 // Delete User
 func (uc *UsersController) DeleteUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -191,12 +204,29 @@ func (uc *UsersController) DeleteUser() echo.HandlerFunc {
 func (uc *UsersController) SearchUsers() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		keyword := c.QueryParam("keyword")
-		users, err := uc.model.SearchUsers(keyword)
+		limit, _ := strconv.Atoi(c.QueryParam("limit"))
+		offset, _ := strconv.Atoi(c.QueryParam("offset"))
+		users, err := uc.model.SearchUsers(keyword, limit, offset)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Cannot search users, something happened", err))
 		}
 
-		return c.JSON(http.StatusOK, response.FormatResponse("Search users success", users))
+		searchResponse := response.UsersResponse{}
+		for _, user := range users{
+			searchResponse.Id = user.Id
+			searchResponse.Name = user.Name
+			searchResponse.Username = user.Username
+			searchResponse.Password = user.Password
+			searchResponse.Email = user.Email
+			searchResponse.Phone = user.Phone
+			searchResponse.Address = user.Address
+			searchResponse.Role = user.Role
+			searchResponse.CreatedAt = user.CreatedAt
+			searchResponse.UpdatedAt = user.UpdatedAt
+			searchResponse.DeletedAt = user.DeletedAt
+		}
+
+		return c.JSON(http.StatusOK, response.FormatResponse("Search users success", searchResponse))
 	}
 }
 

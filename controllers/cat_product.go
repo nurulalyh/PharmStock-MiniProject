@@ -1,118 +1,150 @@
 package controllers
 
-// import (
-// 	"net/http"
-// 	"pharm-stock/configs"
-// 	"pharm-stock/helper"
-// 	"pharm-stock/models"
-// 	"strconv"
+import (
+	"net/http"
+	"pharm-stock/configs"
+	"pharm-stock/models"
+	"pharm-stock/utils/request"
+	"pharm-stock/utils/response"
+	"strconv"
 
-// 	"github.com/labstack/echo/v4"
-// )
+	"github.com/labstack/echo/v4"
+)
 
-// type CatProductControllerInterface interface {
-// 	CreateCatProduct() echo.HandlerFunc
-// 	GetAllCatProduct() echo.HandlerFunc
-// 	GetCatProductById() echo.HandlerFunc
-// 	UpdateCatProduct() echo.HandlerFunc
-// 	DeleteCatProduct() echo.HandlerFunc
-// }
+// Interface beetween controller and routes
+type CatProductsControllerInterface interface {
+	CreateCatProduct() echo.HandlerFunc
+	GetAllCatProduct() echo.HandlerFunc
+	UpdateCatProduct() echo.HandlerFunc
+	DeleteCatProduct() echo.HandlerFunc
+	SearchCatProduct() echo.HandlerFunc
+}
 
-// type CatProductController struct {
-// 	config configs.Config
-// 	model  models.CatProductModelInterface
-// }
+// Connect into db and model
+type CatProductsController struct {
+	config configs.Config
+	model  models.CatProductsModelInterface
+}
 
-// func NewCatProductControllerInterface(m models.CatProductModelInterface) CatProductControllerInterface {
-// 	return &CatProductController{
-// 		model: m,
-// 	}
-// }
+// Create new instance from UserController
+func NewCatProductsControllerInterface(m models.CatProductsModelInterface) CatProductsControllerInterface {
+	return &CatProductsController{
+		model: m,
+	}
+}
 
-// func (cpc *CatProductController) CreateCatProduct() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 		var input = models.CatProduct{}
-// 		if err := c.Bind(&input); err != nil {
-// 			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid category product input", nil))
-// 		}
+// Create Category Product
+func (cpc *CatProductsController) CreateCatProduct() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var input = request.InsertCategoryProductRequest{}
+		if errBind := c.Bind(&input); errBind != nil {
+			return c.JSON(http.StatusBadRequest, response.FormatResponse("invalid category product input", errBind))
+		}
 
-// 		var res = cpc.model.Insert(input)
-// 		if res == nil {
-// 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", nil))
-// 		}
+		var newCatProduct = models.CatProducts{}
+		newCatProduct.Name = input.Name
 
-// 		return c.JSON(http.StatusCreated, helper.FormatResponse("success create category product", res))
-// 	}
-// }
+		var res, errQuery = cpc.model.Insert(newCatProduct)
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Cannot process data, something happend", errQuery.Error()))
+		}
 
-// func (cpc *CatProductController) GetAllCatProduct() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 		var res = cpc.model.SelectAll()
+		var insertResponse = response.CatProductsResponse{}
+		insertResponse.Id = res.Id
+		insertResponse.Name = res.Name
+		insertResponse.CreatedAt = res.CreatedAt
+		insertResponse.UpdatedAt = res.UpdatedAt
+		insertResponse.DeletedAt = res.DeletedAt
 
-// 		if res == nil {
-// 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all category product, ", nil))
-// 		}
+		return c.JSON(http.StatusCreated, response.FormatResponse("success create category product", insertResponse))
+	}
+}
 
-// 		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all category product, ", res))
-// 	}
-// }
+// Get All Category Product
+func (cpc *CatProductsController) GetAllCatProduct() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		limit, _ := strconv.Atoi(c.QueryParam("limit"))
+		offset, _ := strconv.Atoi(c.QueryParam("offset"))
 
-// func (cpc *CatProductController) GetCatProductById() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 		var paramId = c.Param("id")
+		var res, err = cpc.model.SelectAll(limit, offset)
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Error get all category product, ", err))
+		}
 
-// 		cnv, err := strconv.Atoi(paramId)
-// 		if err != nil {
-// 			return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
-// 		}
+		getAllResponse := response.CatProductsResponse{}
+		for _, catProduct := range res {
+			getAllResponse.Id = catProduct.Id
+			getAllResponse.Name = catProduct.Name
+			getAllResponse.CreatedAt = catProduct.CreatedAt
+			getAllResponse.UpdatedAt = catProduct.UpdatedAt
+			getAllResponse.DeletedAt = catProduct.DeletedAt
+		}
 
-// 		var res = cpc.model.SelectById(cnv)
-// 		if res == nil {
-// 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get category product by id, ", nil))
-// 		}
+		return c.JSON(http.StatusOK, response.FormatResponse("Success get all category product, ", getAllResponse))
+	}
+}
 
-// 		return c.JSON(http.StatusOK, helper.FormatResponse("Success get category product", res))
-// 	}
-// }
+// Update Category Product
+func (cpc *CatProductsController) UpdateCatProduct() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var paramId = c.Param("id")
+		var input = models.CatProducts{}
+		if errBind := c.Bind(&input); errBind != nil {
+			return c.JSON(http.StatusBadRequest, response.FormatResponse("invalid category product input", errBind))
+		}
 
-// func (cpc *CatProductController) UpdateCatProduct() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 		var paramId = c.Param("id")
-// 		cnv, err := strconv.Atoi(paramId)
-// 		if err != nil {
-// 			return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
-// 		}
+		input.Id = paramId
 
-// 		var input = models.CatProduct{}
-// 		if err := c.Bind(&input); err != nil {
-// 			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid category product input", nil))
-// 		}
+		var res, errQuery = cpc.model.Update(input)
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, response.FormatResponse("cannot process data, something happend", errQuery))
+		}
 
-// 		input.Id = cnv
+		updateResponse := response.CatProductsResponse{}
+		updateResponse.Id = res.Id
+		updateResponse.Name = res.Name
+		updateResponse.CreatedAt = res.CreatedAt
+		updateResponse.UpdatedAt = res.UpdatedAt
+		updateResponse.DeletedAt = res.DeletedAt
 
-// 		var res = cpc.model.Update(input)
-// 		if res == nil {
-// 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", nil))
-// 		}
+		return c.JSON(http.StatusOK, response.FormatResponse("Success update data", updateResponse))
+	}
+}
 
-// 		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", res))
-// 	}
-// }
+// Delete Category Product
+func (cpc *CatProductsController) DeleteCatProduct() echo.HandlerFunc {
+	return func(c echo.Context) error {
+	  var paramId = c.Param("id")
 
-// func (cpc *CatProductController) DeleteCatProduct() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 	  var paramId = c.Param("id")
-  
-// 	  cnv, err := strconv.Atoi(paramId)
-// 	  if err != nil {
-// 		return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
-// 	  }
-  
-// 	  success := cpc.model.Delete(cnv)
-// 	  if !success {
-// 		return c.JSON(http.StatusNotFound, helper.FormatResponse("Category product not found", nil))
-// 	  }
-  
-// 	  return c.JSON(http.StatusOK, helper.FormatResponse("Success delete category product", nil))
-// 	}
-// }
+	  success, errQuery := cpc.model.Delete(paramId)
+	  if !success {
+		return c.JSON(http.StatusNotFound, response.FormatResponse("Category product not found", errQuery))
+	  }
+
+	  return c.JSON(http.StatusOK, response.FormatResponse("Success delete category product", nil))
+	}
+}
+
+// Searching
+func (cpc *CatProductsController) SearchCatProduct() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		keyword := c.QueryParam("keyword")
+		limit, _ := strconv.Atoi(c.QueryParam("limit"))
+		offset, _ := strconv.Atoi(c.QueryParam("offset"))
+		catProducts, err := cpc.model.SearchCatProduct(keyword, limit, offset)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Cannot search category products, something happened", err))
+		}
+
+		searchResponse := response.CatProductsResponse{}
+		for _, catProduct := range catProducts{
+			searchResponse.Id = catProduct.Id
+			searchResponse.Name = catProduct.Name
+			searchResponse.CreatedAt = catProduct.CreatedAt
+			searchResponse.UpdatedAt = catProduct.UpdatedAt
+			searchResponse.DeletedAt = catProduct.DeletedAt
+		}
+
+		return c.JSON(http.StatusOK, response.FormatResponse("Search category product success", searchResponse))
+	}
+}

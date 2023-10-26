@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// Struct Users
 type Users struct {
 	Id           string         `gorm:"primaryKey;type:varchar(10)"`
 	Name         string         `gorm:"type:varchar(100);not null"`
@@ -33,7 +34,7 @@ type UsersModelInterface interface {
 	SelectAll(limit, offset int) ([]Users, error)
 	Update(updatedData Users) (*Users, error)
 	Delete(userId string) (bool, error)
-	SearchUsers(keyword string) ([]Users, error)
+	SearchUsers(keyword string, limit int, offset int) ([]Users, error)
 	InsertAdmin(newItem Users) (*Users, error)
 }
 
@@ -66,11 +67,11 @@ func (um *UsersModel) Login(username string, password string) (*Users, error) {
 // Insert User
 func (um *UsersModel) Insert(newUser Users) (*Users, error) {
 	var latestUser Users
-	if errFilter := um.db.Order("id DESC").First(&latestUser).Error; errFilter != nil {
-		return nil, errors.New("Error filter data, " + errFilter.Error())
+	if errSort := um.db.Order("id DESC").First(&latestUser).Error; errSort != nil {
+		return nil, errors.New("Error filter data, " + errSort.Error())
 	}
 
-	newID := generateNewID(latestUser.Id)
+	newID := generateUserId(latestUser.Id)
 	if newID == "" {
 		return nil, errors.New("Failed generate Id")
 	}
@@ -78,7 +79,7 @@ func (um *UsersModel) Insert(newUser Users) (*Users, error) {
 	newUser.Id = newID
 	newUser.Role = "apoteker"
 
-	validate := validate(newUser)
+	validate := validateUser(newUser)
 	if !validate {
 		return nil, errors.New("Data not valid")
 	}
@@ -102,8 +103,7 @@ func (um *UsersModel) Insert(newUser Users) (*Users, error) {
 func (um *UsersModel) SelectAll(limit, offset int) ([]Users, error) {
 	var data []Users
 	if err := um.db.Limit(limit).Offset(offset).Find(&data).Error; err != nil {
-		logrus.Error("Cannot get all users, ", err.Error())
-		return nil, err
+		return nil, errors.New("Cannot get all users, " + err.Error())
 	}
 	return data, nil
 }
@@ -172,9 +172,9 @@ func (um *UsersModel) Delete(userId string) (bool, error) {
 }
 
 // Searching
-func (um *UsersModel) SearchUsers(keyword string) ([]Users, error) {
+func (um *UsersModel) SearchUsers(keyword string, limit int, offset int) ([]Users, error) {
 	var users []Users
-	query := um.db.Where("id LIKE ? OR name LIKE ? OR username LIKE ? OR password LIKE ? OR email LIKE ? OR phone LIKE ? OR address LIKE ? OR role LIKE ? OR created_at LIKE ? OR updated_at LIKE ? OR deleted_at LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
+	query := um.db.Where("id LIKE ? OR name LIKE ? OR username LIKE ? OR password LIKE ? OR email LIKE ? OR phone LIKE ? OR address LIKE ? OR role LIKE ? OR created_at LIKE ? OR updated_at LIKE ? OR deleted_at LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%").Limit(limit).Offset(offset)
 
 	if err := query.Find(&users).Error; err != nil {
 		return nil, errors.New("Error search data, " + err.Error())
@@ -188,7 +188,7 @@ func (um *UsersModel) InsertAdmin(newUser Users) (*Users, error) {
 	newUser.Id = "USR-0001"
 	newUser.Role = "administrator"
 
-	validate := validate(newUser)
+	validate := validateUser(newUser)
 	if !validate {
 		return nil, errors.New("The data must not be empty and should adhere to the specified format")
 	}
@@ -209,7 +209,7 @@ func (um *UsersModel) InsertAdmin(newUser Users) (*Users, error) {
 }
 
 // Generate Id
-func generateNewID(latestID string) string {
+func generateUserId(latestID string) string {
 	var numID int
 	if _, err := fmt.Sscanf(latestID, "USR-%04d", &numID); err != nil {
 		return ""
@@ -219,7 +219,7 @@ func generateNewID(latestID string) string {
 }
 
 // Validate
-func validate(user Users) bool {
+func validateUser(user Users) bool {
 	if user.Id == "" || len(user.Id) > 10 {
 		logrus.Error("Model: Id is required and must be up to 10 characters")
 		return false
