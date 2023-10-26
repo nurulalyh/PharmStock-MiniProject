@@ -20,11 +20,11 @@ func InitModel(config configs.Config) *gorm.DB {
 }
 
 func Migrate(db *gorm.DB) {
-	db.AutoMigrate(&User{})
-	db.AutoMigrate(&Product{})
-	db.AutoMigrate(&Distributor{})
-	db.AutoMigrate(&CatProduct{})
-	db.AutoMigrate(&Transaction{})
-	db.AutoMigrate(&ReqProduct{})
-	db.AutoMigrate(&DetailProduct{})
+	db.AutoMigrate(&Users{})
+	db.AutoMigrate(&Products{})
+	db.AutoMigrate(&Distributors{})
+	db.AutoMigrate(&CatProducts{})
+	db.AutoMigrate(&Transactions{})
+	db.AutoMigrate(&ReqProducts{})
+	db.AutoMigrate(&DetailTransactions{})
 }

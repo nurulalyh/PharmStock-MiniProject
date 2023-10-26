@@ -1,4 +1,4 @@
-package helper
+package response
 
 func FormatResponse(message string, data any) map[string]any {
 	var response = map[string]any{}
