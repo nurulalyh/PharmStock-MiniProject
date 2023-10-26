@@ -43,7 +43,7 @@ func NewCatProductsModel(db *gorm.DB) CatProductsModelInterface {
 // Insert Category Product
 func (cpm *CatProductsModel) Insert(newCatProduct CatProducts) (*CatProducts, error) {
 	var latestCatProduct CatProducts
-	if errSort := cpm.db.Order("id DESC").First(&latestCatProduct).Error; errSort != nil {
+	if errSort := cpm.db.Unscoped().Order("id DESC").First(&latestCatProduct).Error; errSort != nil {
     	latestCatProduct.Id = "CPT-0000"
 	}
 
