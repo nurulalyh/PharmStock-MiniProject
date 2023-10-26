@@ -1,16 +1,18 @@
-package helper
+package authentication
 
 import (
+	"errors"
+	"net/http"
 	"pharm-stock/configs"
+	"pharm-stock/utils/response"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
-	"github.com/sirupsen/logrus"
 )
 
-func generateToken(signKey string, id int, username string, role string) string {
+func generateToken(signKey string, id string, username string, role string) (string, error) {
 	var claims = jwt.MapClaims{}
 	claims["id"] = id
 	claims["username"] = username
@@ -22,14 +24,13 @@ func generateToken(signKey string, id int, username string, role string) string 
 
 	validToken, err := sign.SignedString([]byte(signKey))
 	if err != nil {
-		logrus.Error("JWT : claims isn't valid, ", err.Error())
-		return ""
+		return "", errors.New("JWT claims isn't valid, " + err.Error())
 	}
 
-	return validToken
+	return validToken, nil
 }
 
-func generateRefreshToken(signKey string, accessToken string) string {
+func generateRefreshToken(signKey string, accessToken string) (string, error) {
 	var claims = jwt.MapClaims{}
 	claims["user"] = accessToken
 	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
@@ -38,41 +39,37 @@ func generateRefreshToken(signKey string, accessToken string) string {
 
 	refreshToken, err := sign.SignedString([]byte(signKey))
 	if err != nil {
-		logrus.Error("JWT : claims isn't valid, ", err.Error())
-		return ""
+		return "", errors.New("JWT claims isn't valid, " + err.Error())
 	}
 
-	return refreshToken
+	return refreshToken, nil
 }
 
-func GenerateJWT(signKey string, refreshKey string, userId int, username string, role string) map[string]any {
+func GenerateJWT(signKey string, refreshKey string, userId string, username string, role string) (map[string]any, error) {
 	var res = map[string]any{}
 
-	var accessToken = generateToken(signKey, userId, username, role)
+	var accessToken, errGenerateToken = generateToken(signKey, userId, username, role)
 	if accessToken == "" {
-		logrus.Error("JWT : Cannot generate token", nil)
-		return nil
+		return nil, errors.New("Cannot generate JWT token, " + errGenerateToken.Error())
 	}
 
-	var refreshToken = generateRefreshToken(refreshKey, accessToken)
+	var refreshToken, errRefToken = generateRefreshToken(refreshKey, accessToken)
 	if refreshToken == "" {
-		logrus.Error("JWT : Cannot generate refresh token", nil)
-		return nil
+		return nil, errors.New("Cannot generate JWT refresh token, " + errRefToken.Error())
 	}
 
 	res["access_token"] = accessToken
 	res["refresh_token"] = refreshToken
 
-	return res
+	return res, nil
 }
 
-func RefreshJWT(accessToken string, refreshToken *jwt.Token, signKey string) map[string]any {
+func RefreshJWT(accessToken string, refreshToken *jwt.Token, signKey string) (map[string]any, error) {
 	var res = map[string]any{}
 
 	expTime, err := refreshToken.Claims.GetExpirationTime()
 	if err != nil {
-		logrus.Error("JWT : get token expiration error, ", err.Error())
-		return nil
+		return nil, errors.New("Error get token expiration, " + err.Error())
 	}
 
 	if refreshToken.Valid && expTime.After(time.Now()) {
@@ -81,10 +78,8 @@ func RefreshJWT(accessToken string, refreshToken *jwt.Token, signKey string) map
 		newToken, err := jwt.ParseWithClaims(accessToken, newClaim, func(t *jwt.Token) (interface{}, error) {
 			return []byte(signKey), nil
 		})
-
 		if err != nil {
-			logrus.Error("JWT error : ", err.Error())
-			return nil
+			return nil, errors.New("JWT error : " + err.Error())
 		}
 
 		newClaim = newToken.Claims.(jwt.MapClaims)
@@ -100,13 +95,13 @@ func RefreshJWT(accessToken string, refreshToken *jwt.Token, signKey string) map
 		res["access_token"] = newToken.Raw
 		res["refresh_token"] = newSignedRefreshToken
 
-		return res
+		return res, nil
 	}
 
-	return nil
+	return nil, nil
 }
 
-func ExtractToken(token *jwt.Token) any {
+func ExtractToken(token *jwt.Token) (any, error) {
 	if token.Valid {
 		var claims = token.Claims
 
@@ -117,14 +112,13 @@ func ExtractToken(token *jwt.Token) any {
 			newMap["id"] = MapClaim["id"]
 			newMap["username"] = MapClaim["username"]
 			newMap["role"] = MapClaim["role"]
-			return newMap
+			return newMap, nil
 		}
 
-		logrus.Error("JWT : token expired", nil)
-		return nil
+		return nil, errors.New("JWT token expired")
 	}
 
-	return nil
+	return nil, nil
 }
 
 func Middleware() echo.MiddlewareFunc {
@@ -133,4 +127,24 @@ func Middleware() echo.MiddlewareFunc {
 		SigningKey:    []byte(cfg.Secret),
 		SigningMethod: "HS256",
 	})
+}
+
+func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	cfg := configs.Config{}
+	return func(c echo.Context) error {
+		tokenString := c.Request().Header.Get("Authorization")
+		if tokenString == "" {
+			return c.JSON(http.StatusUnauthorized, response.FormatResponse("Token is required", nil))
+		}
+
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			return []byte(cfg.Secret), nil
+		})
+
+		if err != nil || !token.Valid {
+			return c.JSON(http.StatusUnauthorized, response.FormatResponse("Invalid token", err))
+		}
+
+		return next(c)
+	}
 }

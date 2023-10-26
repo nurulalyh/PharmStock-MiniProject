@@ -6,15 +6,20 @@ import (
 	"gorm.io/gorm"
 )
 
-type Product struct {
-	Id           int            `gorm:"primaryKey;type:smallint" json:"id" form:"id"`
-	Name         string         `gorm:"type:varchar(100);not null" json:"name" form:"name"`
-	Photo        string         `gorm:"type:text;not null" json:"photo" form:"photo"`
-	Description  string         `gorm:"type:text;not null" json:"description" form:"description"`
-	TotStock     int            `gorm:"type:smallint;not null" json:"tot_stock" form:"tot_stock"`
-	IdCatProduct int            `gorm:"type:smallint;not null" json:"id_cat_product" form:"id_cat_product"`
-	CreatedAt    time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"created_at" form:"created_at"`
-	UpdatedAt    time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"updated_at" form:"updated_at"`
-	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deleted_at" form:"deleted_at"`
-	DetailProducts []DetailProduct `gorm:"foreignKey:IdProduct;references:Id"`
+type Products struct {
+	Id                string               `gorm:"primaryKey;type:varchar(10)"`
+	Name              string               `gorm:"type:varchar(100);not null"`
+	Photo             string               `gorm:"type:text;not null"`
+	IdCatProduct      string               `gorm:"type:varchar(10);not null"`
+	MfDate            time.Time            `gorm:"type:date;not null"`
+	ExpDate           time.Time            `gorm:"type:date;not null"`
+	BatchNumber       int                  `gorm:"type:smallint;not null"`
+	UnitPrice         int                  `gorm:"type:smallint;not null"`
+	Stock             int                  `gorm:"type:smallint;not null"`
+	Description       string               `gorm:"type:text;not null"`
+	IdDistributor     string               `gorm:"type:varchar(10);not null"`
+	CreatedAt         time.Time            `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP"`
+	UpdatedAt         time.Time            `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP"`
+	DeletedAt         gorm.DeletedAt       `gorm:"index"`
+	DetailTransaction []DetailTransactions `gorm:"foreignKey:id_product;references:Id"`
 }
