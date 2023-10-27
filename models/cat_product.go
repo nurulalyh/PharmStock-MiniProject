@@ -65,7 +65,7 @@ func (cpm *CatProductsModel) Insert(newCatProduct CatProducts) (*CatProducts, er
 			return nil, errors.New("Error insert category product, " + err.Error())
 		}
 	} else {
-		return nil, errors.New("Username already exists")
+		return nil, errors.New("Category product already exists")
 	}
 
 	return &newCatProduct, nil
@@ -94,7 +94,6 @@ func (cpm *CatProductsModel) Update(updatedData CatProducts) (*CatProducts, erro
 
 	var updatedCatProduct = CatProducts{}
 	if err := cpm.db.Where("id = ?", updatedData.Id).First(&updatedCatProduct).Error; err != nil {
-		logrus.Error("Model : Error get updated data, ", err.Error())
 		return nil, errors.New("Error get updated data, " + err.Error())
 	}
 

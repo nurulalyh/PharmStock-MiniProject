@@ -174,7 +174,7 @@ func (um *UsersModel) Delete(userId string) (bool, error) {
 // Searching
 func (um *UsersModel) SearchUsers(keyword string, limit int, offset int) ([]Users, error) {
 	var users []Users
-	query := um.db.Where("id LIKE ? OR name LIKE ? OR username LIKE ? OR password LIKE ? OR email LIKE ? OR phone LIKE ? OR address LIKE ? OR role LIKE ? OR created_at LIKE ? OR updated_at LIKE ? OR deleted_at LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%").Limit(limit).Offset(offset)
+	query := um.db.Limit(limit).Offset(offset).Where("id LIKE ? OR name LIKE ? OR username LIKE ? OR password LIKE ? OR email LIKE ? OR phone LIKE ? OR address LIKE ? OR role LIKE ? OR created_at LIKE ? OR updated_at LIKE ? OR deleted_at LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 
 	if err := query.Find(&users).Error; err != nil {
 		return nil, errors.New("Error search data, " + err.Error())
