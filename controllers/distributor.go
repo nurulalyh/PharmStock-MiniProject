@@ -1,118 +1,157 @@
 package controllers
 
-// import (
-// 	"net/http"
-// 	"pharm-stock/configs"
-// 	"pharm-stock/helper"
-// 	"pharm-stock/models"
-// 	"strconv"
+import (
+	"net/http"
+	"pharm-stock/configs"
+	"pharm-stock/models"
+	"pharm-stock/utils/request"
+	"pharm-stock/utils/response"
+	"strconv"
 
-// 	"github.com/labstack/echo/v4"
-// )
+	"github.com/labstack/echo/v4"
+)
 
-// type DistributorControllerInterface interface {
-// 	CreateDistributor() echo.HandlerFunc
-// 	GetAllDistributor() echo.HandlerFunc
-// 	GetDistributorById() echo.HandlerFunc
-// 	UpdateDistributor() echo.HandlerFunc
-// 	DeleteDistributor() echo.HandlerFunc
-// }
+// Interface beetween controller and routes
+type DistributorsControllerInterface interface {
+	CreateDistributor() echo.HandlerFunc
+	GetAllDistributor() echo.HandlerFunc
+	UpdateDistributor() echo.HandlerFunc
+	DeleteDistributor() echo.HandlerFunc
+	SearchDistributor() echo.HandlerFunc
+}
 
-// type DistributorController struct {
-// 	config configs.Config
-// 	model  models.DistributorModelInterface
-// }
+// Connect into db and model
+type DistributorsController struct {
+	config configs.Config
+	model  models.DistributorModelInterface
+}
 
-// func NewDistributorControllerInterface(m models.DistributorModelInterface) DistributorControllerInterface {
-// 	return &DistributorController{
-// 		model: m,
-// 	}
-// }
+// Create new instance from DistributorsController
+func NewDistributorControllerInterface(m models.DistributorModelInterface) DistributorsControllerInterface {
+	return &DistributorsController{
+		model: m,
+	}
+}
 
-// func (dc *DistributorController) CreateDistributor() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 		var input = models.Distributor{}
-// 		if err := c.Bind(&input); err != nil {
-// 			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid distributor input", nil))
-// 		}
+// Create Distributor
+func (dc *DistributorsController) CreateDistributor() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var input = request.InsertDistributorsRequest{}
+		if errBind := c.Bind(&input); errBind != nil {
+			return c.JSON(http.StatusBadRequest, response.FormatResponse("invalid distributor input", errBind))
+		}
 
-// 		var res = dc.model.Insert(input)
-// 		if res == nil {
-// 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", nil))
-// 		}
+		var newDistributor = models.Distributors{}
+		newDistributor.Name = input.Name
 
-// 		return c.JSON(http.StatusCreated, helper.FormatResponse("success create distributor", res))
-// 	}
-// }
+		var res, errQuery = dc.model.Insert(newDistributor)
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Cannot process data, something happend", errQuery.Error()))
+		}
 
-// func (dc *DistributorController) GetAllDistributor() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 		var res = dc.model.SelectAll()
+		var insertResponse = response.DistributorResponse{}
+		insertResponse.Id = res.Id
+		insertResponse.Name = res.Name
+		insertResponse.CreatedAt = res.CreatedAt
+		insertResponse.UpdatedAt = res.UpdatedAt
+		insertResponse.DeletedAt = res.DeletedAt
 
-// 		if res == nil {
-// 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all distributor, ", nil))
-// 		}
+		return c.JSON(http.StatusCreated, response.FormatResponse("success create distributor", insertResponse))
+	}
+}
 
-// 		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all distributor, ", res))
-// 	}
-// }
+// Get all distributor
+func (dc *DistributorsController) GetAllDistributor() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		limit, _ := strconv.Atoi(c.QueryParam("limit"))
+		offset, _ := strconv.Atoi(c.QueryParam("offset"))
 
-// func (dc *DistributorController) GetDistributorById() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 		var paramId = c.Param("id")
+		var res, err = dc.model.SelectAll(limit, offset)
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Error get all distributor, ", err))
+		}
 
-// 		cnv, err := strconv.Atoi(paramId)
-// 		if err != nil {
-// 			return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
-// 		}
+		var getAllResponse []response.DistributorResponse // Menggunakan slice
 
-// 		var res = dc.model.SelectById(cnv)
-// 		if res == nil {
-// 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get distributor by id, ", nil))
-// 		}
+		for _, distributor := range res {
+			getAllResponse = append(getAllResponse, response.DistributorResponse{
+				Id:        distributor.Id,
+				Name:      distributor.Name,
+				CreatedAt: distributor.CreatedAt,
+				UpdatedAt: distributor.UpdatedAt,
+				DeletedAt: distributor.DeletedAt,
+			})
+		}
 
-// 		return c.JSON(http.StatusOK, helper.FormatResponse("Success get distributor", res))
-// 	}
-// }
+		return c.JSON(http.StatusOK, response.FormatResponse("Success get all distributor, ", getAllResponse))
+	}
+}
 
-// func (dc *DistributorController) UpdateDistributor() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 		var paramId = c.Param("id")
-// 		cnv, err := strconv.Atoi(paramId)
-// 		if err != nil {
-// 			return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
-// 		}
+//Update distributor
+func (dc *DistributorsController) UpdateDistributor() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var paramId = c.Param("id")
+		var input = models.Distributors{}
+		if errBind := c.Bind(&input); errBind != nil {
+			return c.JSON(http.StatusBadRequest, response.FormatResponse("invalid distributor input", errBind))
+		}
 
-// 		var input = models.Distributor{}
-// 		if err := c.Bind(&input); err != nil {
-// 			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid distributor input", nil))
-// 		}
+		input.Id = paramId
 
-// 		input.Id = cnv
+		var res, errQuery = dc.model.Update(input)
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, response.FormatResponse("cannot process data, something happend", errQuery))
+		}
 
-// 		var res = dc.model.Update(input)
-// 		if res == nil {
-// 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", nil))
-// 		}
+		updateResponse := response.DistributorResponse{}
+		updateResponse.Id = res.Id
+		updateResponse.Name = res.Name
+		updateResponse.CreatedAt = res.CreatedAt
+		updateResponse.UpdatedAt = res.UpdatedAt
+		updateResponse.DeletedAt = res.DeletedAt
 
-// 		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", res))
-// 	}
-// }
+		return c.JSON(http.StatusOK, response.FormatResponse("Success update data", updateResponse))
+	}
+}
 
-// func (dc *DistributorController) DeleteDistributor() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 	  var paramId = c.Param("id")
-  
-// 	  cnv, err := strconv.Atoi(paramId)
-// 	  if err != nil {
-// 		return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
-// 	  }
-  
-// 	  success := dc.model.Delete(cnv)
-// 	  if !success {
-// 		return c.JSON(http.StatusNotFound, helper.FormatResponse("distributor not found", nil))
-// 	  }
-  
-// 	  return c.JSON(http.StatusOK, helper.FormatResponse("Success delete distributor", nil))
-// 	}
-// }
+
+// Delete Distributor
+func (dc *DistributorsController) DeleteDistributor() echo.HandlerFunc {
+	return func(c echo.Context) error {
+	  var paramId = c.Param("id")
+
+	  success, errQuery := dc.model.Delete(paramId)
+	  if !success {
+		return c.JSON(http.StatusNotFound, response.FormatResponse("distributor not found", errQuery))
+	  }
+
+	  return c.JSON(http.StatusOK, response.FormatResponse("Success delete distributor", nil))
+	}
+}
+
+// Searching
+func (dc *DistributorsController) SearchDistributor() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		keyword := c.QueryParam("keyword")
+		limit, _ := strconv.Atoi(c.QueryParam("limit"))
+		offset, _ := strconv.Atoi(c.QueryParam("offset"))
+		distributors, err := dc.model.SearchDistributor(keyword, limit, offset)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Cannot search category products, something happened", err))
+		}
+
+		var searchResponse []response.DistributorResponse
+
+		for _, distributor := range distributors {
+			searchResponse = append(searchResponse, response.DistributorResponse{
+				Id:        distributor.Id,
+				Name:      distributor.Name,
+				CreatedAt: distributor.CreatedAt,
+				UpdatedAt: distributor.UpdatedAt,
+				DeletedAt: distributor.DeletedAt,
+			})
+		}
+
+		return c.JSON(http.StatusOK, response.FormatResponse("Search category product success", searchResponse))
+	}
+}

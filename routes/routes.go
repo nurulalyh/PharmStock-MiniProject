@@ -32,15 +32,15 @@ func RouteCatProduct(e *echo.Echo, cpc controllers.CatProductsControllerInterfac
 	catProduct.GET("/search", cpc.SearchCatProduct())
 }
 
-// func RouteDistributor(e *echo.Echo, dc controllers.DistributorControllerInterface, cfg configs.Config) {
-// 	var user = e.Group("/distributors")
+func RouteDistributor(e *echo.Echo, dc controllers.DistributorsControllerInterface, cfg configs.Config) {
+	var distributor = e.Group("/distributors")
 
-// 	user.POST("", dc.CreateDistributor())
-// 	user.GET("", dc.GetAllDistributor())
-// 	user.GET("/:id", dc.GetDistributorById())
-// 	user.PUT("/:id", dc.UpdateDistributor())
-// 	user.DELETE("/:id", dc.DeleteDistributor())
-// }
+	distributor.POST("", dc.CreateDistributor())
+	distributor.GET("", dc.GetAllDistributor())
+	distributor.PUT("/:id", dc.UpdateDistributor())
+	distributor.DELETE("/:id", dc.DeleteDistributor())
+	distributor.GET("/search", dc.SearchDistributor())
+}
 
 // func RouteReqProduct(e *echo.Echo, rpc controllers.ReqProductControllerInterface, cfg configs.Config) {
 // 	var user = e.Group("/reqproducts")

@@ -26,7 +26,7 @@ type CatProductsController struct {
 	model  models.CatProductsModelInterface
 }
 
-// Create new instance from UserController
+// Create new instance from CatProductsController
 func NewCatProductsControllerInterface(m models.CatProductsModelInterface) CatProductsControllerInterface {
 	return &CatProductsController{
 		model: m,
@@ -71,13 +71,16 @@ func (cpc *CatProductsController) GetAllCatProduct() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Error get all category product, ", err))
 		}
 
-		getAllResponse := response.CatProductsResponse{}
+		var getAllResponse []response.CatProductsResponse
+
 		for _, catProduct := range res {
-			getAllResponse.Id = catProduct.Id
-			getAllResponse.Name = catProduct.Name
-			getAllResponse.CreatedAt = catProduct.CreatedAt
-			getAllResponse.UpdatedAt = catProduct.UpdatedAt
-			getAllResponse.DeletedAt = catProduct.DeletedAt
+			getAllResponse = append(getAllResponse, response.CatProductsResponse{
+				Id:        catProduct.Id,
+				Name:      catProduct.Name,
+				CreatedAt: catProduct.CreatedAt,
+				UpdatedAt: catProduct.UpdatedAt,
+				DeletedAt: catProduct.DeletedAt,
+			})
 		}
 
 		return c.JSON(http.StatusOK, response.FormatResponse("Success get all category product, ", getAllResponse))
@@ -136,13 +139,16 @@ func (cpc *CatProductsController) SearchCatProduct() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Cannot search category products, something happened", err))
 		}
 
-		searchResponse := response.CatProductsResponse{}
-		for _, catProduct := range catProducts{
-			searchResponse.Id = catProduct.Id
-			searchResponse.Name = catProduct.Name
-			searchResponse.CreatedAt = catProduct.CreatedAt
-			searchResponse.UpdatedAt = catProduct.UpdatedAt
-			searchResponse.DeletedAt = catProduct.DeletedAt
+		var searchResponse []response.CatProductsResponse
+
+		for _, catProduct := range catProducts {
+			searchResponse = append(searchResponse, response.CatProductsResponse{
+				Id:        catProduct.Id,
+				Name:      catProduct.Name,
+				CreatedAt: catProduct.CreatedAt,
+				UpdatedAt: catProduct.UpdatedAt,
+				DeletedAt: catProduct.DeletedAt,
+			})
 		}
 
 		return c.JSON(http.StatusOK, response.FormatResponse("Search category product success", searchResponse))
