@@ -42,12 +42,12 @@ func RouteDistributor(e *echo.Echo, dc controllers.DistributorsControllerInterfa
 	distributor.GET("/search", dc.SearchDistributor())
 }
 
-// func RouteReqProduct(e *echo.Echo, rpc controllers.ReqProductControllerInterface, cfg configs.Config) {
-// 	var user = e.Group("/reqproducts")
+func RouteReqProduct(e *echo.Echo, rpc controllers.ReqProductsControllerInterface, cfg configs.Config) {
+	var reqProduct = e.Group("/reqproducts")
 
-// 	user.POST("", rpc.CreateReqProduct())
-// 	user.GET("", rpc.GetAllReqProduct())
-// 	user.GET("/:id", rpc.GetReqProductById())
-// 	user.PUT("/:id", rpc.UpdateReqProduct())
-// 	user.DELETE("/:id", rpc.DeleteReqProduct())
-// }
+	reqProduct.POST("", rpc.CreateReqProduct())
+	reqProduct.GET("", rpc.GetAllReqProduct())
+	reqProduct.PUT("/:id", rpc.UpdateReqProduct())
+	reqProduct.DELETE("/:id", rpc.DeleteReqProduct())
+	reqProduct.GET("/search", rpc.SearchReqProduct())
+}

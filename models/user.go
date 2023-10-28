@@ -56,7 +56,6 @@ func (um *UsersModel) Login(username string, password string) (*Users, error) {
 	if err := um.db.Where("username = ?", username).First(&data).Error; err != nil {
 		return nil, errors.New("Error user login, " + err.Error())
 	}
-
 	if data.Id == "" {
 		return nil, errors.New("User not found")
 	}

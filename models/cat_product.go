@@ -33,7 +33,7 @@ type CatProductsModel struct {
 	db *gorm.DB
 }
 
-// New Instance from UsersModel
+// New Instance from CatProductsModel
 func NewCatProductsModel(db *gorm.DB) CatProductsModelInterface {
 	return &CatProductsModel{
 		db: db,
@@ -48,7 +48,6 @@ func (cpm *CatProductsModel) Insert(newCatProduct CatProducts) (*CatProducts, er
 	}
 
 	newID := generateCatProductId(latestCatProduct.Id)
-
 	if newID == "" {
     	return nil, errors.New("Failed generate Id")
 	}

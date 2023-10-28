@@ -71,7 +71,7 @@ func (dc *DistributorsController) GetAllDistributor() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Error get all distributor, ", err))
 		}
 
-		var getAllResponse []response.DistributorResponse // Menggunakan slice
+		var getAllResponse []response.DistributorResponse 
 
 		for _, distributor := range res {
 			getAllResponse = append(getAllResponse, response.DistributorResponse{
