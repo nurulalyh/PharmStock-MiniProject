@@ -71,7 +71,7 @@ func (rpm *ReqProductsModel) Insert(newReqProduct ReqProducts) (*ReqProducts, er
 	return &newReqProduct, nil
 }
 
-// Select All Request Product 
+// Select All Request Product
 func (rpm *ReqProductsModel) SelectAll(limit, offset int) ([]ReqProducts, error) {
 	var data []ReqProducts
 	if err := rpm.db.Limit(limit).Offset(offset).Find(&data).Error; err != nil {
@@ -193,4 +193,3 @@ func validateReqProduct(reqProduct ReqProducts, db *gorm.DB) bool {
 
 	return true
 }
-
