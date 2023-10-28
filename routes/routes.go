@@ -51,3 +51,13 @@ func RouteReqProduct(e *echo.Echo, rpc controllers.ReqProductsControllerInterfac
 	reqProduct.DELETE("/:id", rpc.DeleteReqProduct())
 	reqProduct.GET("/search", rpc.SearchReqProduct())
 }
+
+func RouteTransaction(e *echo.Echo, tc controllers.TransactionsControllerInterface, cfg configs.Config) {
+	var transaction = e.Group("/transactions")
+
+	transaction.POST("", tc.CreateTransaction())
+	transaction.GET("", tc.GetAllTransaction())
+	transaction.PUT("/:id", tc.UpdateTransaction())
+	transaction.DELETE("/:id", tc.DeleteTransaction())
+	transaction.GET("/search", tc.SearchTransaction())
+}
