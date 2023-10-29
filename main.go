@@ -23,12 +23,16 @@ func main() {
 	distributorModel := models.NewDistributorsModel(db)
 	reqProductModel := models.NewReqProductsModel(db)
 	transactionModel := models.NewTransactionsModel(db)
+	productModel := models.NewProductsModel(db)
+	detailTransactionModel := models.NewDetailTransactionsModel(db)
 
 	userController := controllers.NewUsersControlInterface(userModel)
 	catProductController := controllers.NewCatProductsControllerInterface(catProductModel)
 	distributorController := controllers.NewDistributorControllerInterface(distributorModel)
 	reqProductController := controllers.NewReqProductsControllerInterface(reqProductModel)
 	transactionController := controllers.NewTransactionsControllerInterface(transactionModel)
+	productController := controllers.NewProductsControllerInterface(productModel)
+	detailTransactionController := controllers.NewDetailTransactionsControllerInterface(detailTransactionModel)
 
 	e.Pre(middleware.RemoveTrailingSlash())
 
@@ -43,6 +47,8 @@ func main() {
 	routes.RouteDistributor(e, distributorController, *config)
 	routes.RouteReqProduct(e, reqProductController, *config)
 	routes.RouteTransaction(e, transactionController, *config)
+	routes.RouteProduct(e, productController, *config)
+	routes.RouteDetailTransaction(e, detailTransactionController, *config)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", config.ServerPort)).Error())
 }

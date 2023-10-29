@@ -61,3 +61,23 @@ func RouteTransaction(e *echo.Echo, tc controllers.TransactionsControllerInterfa
 	transaction.DELETE("/:id", tc.DeleteTransaction())
 	transaction.GET("/search", tc.SearchTransaction())
 }
+
+func RouteProduct(e *echo.Echo, pc controllers.ProductsControllerInterface, cfg configs.Config) {
+	var product = e.Group("/products")
+
+	product.POST("", pc.CreateProduct())
+	product.GET("", pc.GetAllProduct())
+	product.PUT("/:id", pc.UpdateProduct())
+	product.DELETE("/:id", pc.DeleteProduct())
+	product.GET("/search", pc.SearchProduct())
+}
+
+func RouteDetailTransaction(e *echo.Echo, dtc controllers.DetailTransactionsControllerInterface, cfg configs.Config) {
+	var detailTransaction = e.Group("/detailTransactions")
+
+	detailTransaction.POST("", dtc.CreateDetailTransaction())
+	detailTransaction.GET("", dtc.GetAllDetailTransaction())
+	detailTransaction.PUT("/:id", dtc.UpdateDetailTransaction())
+	detailTransaction.DELETE("/:id", dtc.DeleteDetailTransaction())
+	detailTransaction.GET("/search", dtc.SearchDetailTransaction())
+}
