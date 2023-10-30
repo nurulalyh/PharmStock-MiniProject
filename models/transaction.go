@@ -5,29 +5,26 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 // Struct Transactions
 type Transactions struct {
-	Id                string               `gorm:"primaryKey;type:varchar(10)" json:"id" form:"id"`
-	IdEmployee        string               `gorm:"type:varchar(10);not null" json:"id_employee" form:"id_employee"`
-	TotalQuantity     int                  `gorm:"type:smallint;not null" json:"total_quantity" form:"total_quantity"`
-	TotalPrice        int                  `gorm:"type:smallint;not null" json:"total_price" form:"total_price"`
-	Type              string               `gorm:"type:ENUM('inbound','outbound');not null" json:"type" form:"type"`
-	CreatedAt         time.Time            `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"created_at" form:"created_at"`
-	UpdatedAt         time.Time            `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"updated_at" form:"updated_at"`
-	DeletedAt         gorm.DeletedAt       `gorm:"index" json:"deleted_at" form:"deleted_at"`
-	DetailTransaction []DetailTransactions `gorm:"foreignKey:id_transaction;references:id" json:"detail" form:"detail"`
+	Id                 string               `gorm:"primaryKey;type:varchar(10)" json:"id" form:"id"`
+	IdEmployee         string               `gorm:"type:varchar(10);not null" json:"id_employee" form:"id_employee"`
+	TotalQuantity      int                  `gorm:"type:smallint;not null" json:"total_quantity" form:"total_quantity"`
+	TotalPrice         int                  `gorm:"type:smallint;not null" json:"total_price" form:"total_price"`
+	Type               string               `gorm:"type:ENUM('inbound','outbound');not null" json:"type" form:"type"`
+	CreatedAt          time.Time            `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"created_at" form:"created_at"`
+	UpdatedAt          time.Time            `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"updated_at" form:"updated_at"`
+	DeletedAt          gorm.DeletedAt       `gorm:"index" json:"deleted_at" form:"deleted_at"`
+	DetailTransactions []DetailTransactions `gorm:"foreignKey:id_transaction;references:id" json:"detail" form:"detail"`
 }
 
 // Interface beetween models and controller
 type TransactionsModelInterface interface {
 	Insert(newTransaction Transactions) (*Transactions, error)
 	SelectAll(limit int, offset int) ([]Transactions, error)
-	Update(updatedData Transactions) (*Transactions, error)
-	Delete(TransactionId string) (bool, error)
 	SearchTransaction(keyword string, limit int, offset int) ([]Transactions, error)
 }
 
@@ -51,7 +48,6 @@ func (tm *TransactionsModel) Insert(newTransaction Transactions) (*Transactions,
 	}
 
 	newID := generateTransactionId(latestTransaction.Id)
-
 	if newID == "" {
 		return nil, errors.New("Failed generate Id")
 	}
@@ -60,9 +56,9 @@ func (tm *TransactionsModel) Insert(newTransaction Transactions) (*Transactions,
 	newTransaction.TotalQuantity = 0
 	newTransaction.TotalPrice = 0
 
-	validate := validateTransaction(newTransaction, tm.db)
+	validate, errValidate := validateTransaction(newTransaction, tm.db)
 	if !validate {
-		return nil, errors.New("Data not valid")
+		return nil, errValidate
 	}
 
 	if err := tm.db.Create(&newTransaction).Error; err != nil {
@@ -75,67 +71,52 @@ func (tm *TransactionsModel) Insert(newTransaction Transactions) (*Transactions,
 // Select All transaction
 func (tm *TransactionsModel) SelectAll(limit int, offset int) ([]Transactions, error) {
 	var data = []Transactions{}
-	if err := tm.db.Limit(limit).Offset(offset).Find(&data).Error; err != nil {
-		return nil, errors.New("Cannot get all transaction, " + err.Error())
+
+	if err := tm.db.
+		Limit(limit).
+		Offset(offset).
+		Preload("DetailTransactions").
+		Find(&data).Error; err != nil {
+		return nil, errors.New("Cannot get transaction with detail_transactions, " + err.Error())
 	}
 
 	return data, nil
 }
 
-// Update transaction
-func (tm *TransactionsModel) Update(updatedData Transactions) (*Transactions, error) {
-	var data map[string]interface{} = make(map[string]interface{})
-
-	if updatedData.IdEmployee != "" {
-		data["id_employee"] = updatedData.IdEmployee
-	}
-	if updatedData.Type != "" {
-		data["type"] = updatedData.Type
-	}
-
-	var qry = tm.db.Table("transactions").Where("id = ?", updatedData.Id).Updates(data)
-	if err := qry.Error; err != nil {
-		return nil, errors.New("Error update data" + err.Error())
-	}
-
-	if dataCount := qry.RowsAffected; dataCount < 1 {
-		return nil, errors.New("Update error, no data effected")
-	}
-
-	var updatedTransaction = Transactions{}
-	if err := tm.db.Where("id = ?", updatedData.Id).First(&updatedTransaction).Error; err != nil {
-		return nil, errors.New("Error get updated data, " + err.Error())
-	}
-
-	return &updatedTransaction, nil
-}
-
-// Delete Distributor
-func (tm *TransactionsModel) Delete(transactionId string) (bool, error) {
-	var data = Transactions{}
-	data.Id = transactionId
-
-	if err := tm.db.Where("id = ?", transactionId).First(&data).Error; err != nil {
-		return false, errors.New("Error finding data to delete, " + err.Error())
-	}
-
-	if err := tm.db.Delete(&data).Error; err != nil {
-		return false, errors.New("Error delete data, " + err.Error())
-	}
-
-	return true, nil
-}
-
 // Searching
 func (tm *TransactionsModel) SearchTransaction(keyword string, limit int, offset int) ([]Transactions, error) {
 	var transaction []Transactions
-	query := tm.db.Where("id LIKE ? OR id_employee LIKE ? OR total_quantity LIKE ? OR total_price LIKE ? OR type LIKE ? OR created_at LIKE ? OR updated_at LIKE ? OR deleted_at LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%").Limit(limit).Offset(offset)
+	query := tm.db.Limit(limit).Offset(offset).Where("id LIKE ? OR id_employee LIKE ? OR total_quantity LIKE ? OR total_price LIKE ? OR type LIKE ? OR created_at LIKE ? OR updated_at LIKE ? OR deleted_at LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 
-	if err := query.Find(&transaction).Error; err != nil {
+	if err := query.
+		Limit(limit).
+		Offset(offset).
+		Preload("DetailTransactions").
+		Find(&transaction).Error; err != nil {
 		return nil, errors.New("Error search data, " + err.Error())
 	}
 
 	return transaction, nil
+}
+
+// After Create to acumulate price and quantity from detail_transaction
+func (tm *TransactionsModel) AfterCreate (t *Transactions) error {
+	var totalQuantity int
+	var totalPrice int
+	
+	if err := tm.db.Table("detail_transactions").Where("id_transaction = ?", t.Id).Select("SUM(quantity) as total_quantity, SUM(price) as total_price").Row().Scan(&totalQuantity, &totalPrice); err == nil {
+		t.TotalQuantity = totalQuantity
+		t.TotalPrice = totalPrice
+
+		tm.db.Table("transactions").Where("id = ?", t.Id).UpdateColumns(map[string]interface{}{
+			"total_quantity": t.TotalQuantity,
+			"total_price":    t.TotalPrice,
+		})
+
+		return nil
+	} else {
+		return err
+	}
 }
 
 // Generate Id
@@ -149,27 +130,23 @@ func generateTransactionId(latestID string) string {
 }
 
 // Validate
-func validateTransaction(transaction Transactions, db *gorm.DB) bool {
+func validateTransaction(transaction Transactions, db *gorm.DB) (bool, error) {
 	if transaction.Id == "" || len(transaction.Id) > 10 {
-		logrus.Error("Model: Id is required and must be up to 10 characters")
-		return false
+		return false, errors.New("Id is required and must be up to 10 characters")
 	}
 
 	if transaction.IdEmployee == "" || len(transaction.IdEmployee) > 10 {
-		logrus.Error("Model: Id Employee is required and must be up to 10 characters")
-		return false
+		return false, errors.New("Id employee is required and must be up to 10 characters")
 	}
 
 	var user Users
 	if err := db.Where("id = ?", transaction.IdEmployee).First(&user).Error; err != nil {
-		logrus.Error("Model: Employee with the specified ID does not exist")
-		return false
+		return false, errors.New("Id employee is not registered")
 	}
 
 	if transaction.Type == "" || (transaction.Type != "inbound" && transaction.Type != "outbound") {
-		logrus.Error("Model: Status request is required")
-		return false
+		return false, errors.New("Transaction type is required and must be inbound or outbound")
 	}
 
-	return true
+	return true, nil
 }
