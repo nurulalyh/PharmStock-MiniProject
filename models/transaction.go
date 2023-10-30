@@ -11,15 +11,15 @@ import (
 
 // Struct Transactions
 type Transactions struct {
-	Id                string               `gorm:"primaryKey;type:varchar(10)"`
-	IdEmployee        string               `gorm:"type:varchar(10);not null"`
-	TotalQuantity     int                  `gorm:"type:smallint;not null"`
-	TotalPrice        int                  `gorm:"type:smallint;not null"`
-	Type              string               `gorm:"type:ENUM('inbound','outbound');not null"`
-	CreatedAt         time.Time            `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP"`
-	UpdatedAt         time.Time            `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP"`
-	DeletedAt         gorm.DeletedAt       `gorm:"index"`
-	DetailTransaction []DetailTransactions `gorm:"foreignKey:id_transaction;references:id"`
+	Id                string               `gorm:"primaryKey;type:varchar(10)" json:"id" form:"id"`
+	IdEmployee        string               `gorm:"type:varchar(10);not null" json:"id_employee" form:"id_employee"`
+	TotalQuantity     int                  `gorm:"type:smallint;not null" json:"total_quantity" form:"total_quantity"`
+	TotalPrice        int                  `gorm:"type:smallint;not null" json:"total_price" form:"total_price"`
+	Type              string               `gorm:"type:ENUM('inbound','outbound');not null" json:"type" form:"type"`
+	CreatedAt         time.Time            `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"created_at" form:"created_at"`
+	UpdatedAt         time.Time            `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"updated_at" form:"updated_at"`
+	DeletedAt         gorm.DeletedAt       `gorm:"index" json:"deleted_at" form:"deleted_at"`
+	DetailTransaction []DetailTransactions `gorm:"foreignKey:id_transaction;references:id" json:"detail" form:"detail"`
 }
 
 // Interface beetween models and controller

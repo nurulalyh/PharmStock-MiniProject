@@ -17,7 +17,6 @@ type ReqProductsControllerInterface interface {
 	CreateReqProduct() echo.HandlerFunc
 	GetAllReqProduct() echo.HandlerFunc
 	UpdateReqProduct() echo.HandlerFunc
-	DeleteReqProduct() echo.HandlerFunc
 	SearchReqProduct() echo.HandlerFunc
 }
 
@@ -39,7 +38,7 @@ func (rpc *ReqProductsController) CreateReqProduct() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var input = request.InsertReqProductRequest{}
 		if errBind := c.Bind(&input); errBind != nil {
-			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Request Product input", errBind))
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Request Product input", errBind.Error()))
 		}
 
 		var newReqProduct = models.ReqProducts{}
@@ -47,14 +46,13 @@ func (rpc *ReqProductsController) CreateReqProduct() echo.HandlerFunc {
 		newReqProduct.ProductName = input.ProductName
 		newReqProduct.Quantity = input.Quantity
 		newReqProduct.Note = input.Note
-		newReqProduct.StatusReq = "processed"
 
 		var res, errQuery = rpc.model.Insert(newReqProduct)
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", errQuery))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", errQuery.Error()))
 		}
 
-		var insertResponse = response.ReqProductResponse{}
+		var insertResponse = response.InsertReqProductResponse{}
 		insertResponse.Id = res.Id
 		insertResponse.IdEmployee = res.IdEmployee
 		insertResponse.ProductName = res.ProductName
@@ -62,8 +60,6 @@ func (rpc *ReqProductsController) CreateReqProduct() echo.HandlerFunc {
 		insertResponse.Note = res.Note
 		insertResponse.StatusReq = res.StatusReq
 		insertResponse.CreatedAt = res.CreatedAt
-		insertResponse.UpdatedAt = res.UpdatedAt
-		insertResponse.DeletedAt = res.DeletedAt
 
 		return c.JSON(http.StatusCreated, helper.FormatResponse("success create Request Product", insertResponse))
 	}
@@ -76,28 +72,11 @@ func (rpc *ReqProductsController) GetAllReqProduct() echo.HandlerFunc {
 		offset, _ := strconv.Atoi(c.QueryParam("offset"))
 
 		var res, err = rpc.model.SelectAll(limit, offset)
-
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all Request Product, ", err))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all Request Product, ", err.Error()))
 		}
 
-		var getAllResponse []response.ReqProductResponse
-
-		for _, reqProduct := range res {
-			getAllResponse = append(getAllResponse, response.ReqProductResponse{
-				Id:          reqProduct.Id,
-				IdEmployee:  reqProduct.IdEmployee,
-				ProductName: reqProduct.ProductName,
-				Quantity:    reqProduct.Quantity,
-				Note:        reqProduct.Note,
-				StatusReq:   reqProduct.StatusReq,
-				CreatedAt:   reqProduct.CreatedAt,
-				UpdatedAt:   reqProduct.UpdatedAt,
-				DeletedAt:   reqProduct.DeletedAt,
-			})
-		}
-
-		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all Request Product, ", getAllResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all Request Product, ", res))
 	}
 }
 
@@ -105,19 +84,23 @@ func (rpc *ReqProductsController) GetAllReqProduct() echo.HandlerFunc {
 func (rpc *ReqProductsController) UpdateReqProduct() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var paramId = c.Param("id")
-		var input = models.ReqProducts{}
+		var input = request.UpdateReqProductRequest{}
 		if errBind := c.Bind(&input); errBind != nil {
-			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Request Product input", errBind))
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Request Product input", errBind.Error()))
 		}
 
 		input.Id = paramId
 
-		var res, errQuery = rpc.model.Update(input)
+		update := models.ReqProducts{}
+		update.Id = input.Id
+		update.StatusReq = input.StatusReq
+
+		var res, errQuery = rpc.model.Update(update)
 		if res == nil {
 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", errQuery.Error()))
 		}
 
-		updateResponse := response.ReqProductResponse{}
+		updateResponse := response.UpdateReqProductResponse{}
 		updateResponse.Id = res.Id
 		updateResponse.IdEmployee = res.IdEmployee
 		updateResponse.ProductName = res.ProductName
@@ -126,23 +109,8 @@ func (rpc *ReqProductsController) UpdateReqProduct() echo.HandlerFunc {
 		updateResponse.StatusReq = res.StatusReq
 		updateResponse.CreatedAt = res.CreatedAt
 		updateResponse.UpdatedAt = res.UpdatedAt
-		updateResponse.DeletedAt = res.DeletedAt
 
 		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", updateResponse))
-	}
-}
-
-// Delete Request Product
-func (rpc *ReqProductsController) DeleteReqProduct() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		var paramId = c.Param("id")
-
-		success, errQuery := rpc.model.Delete(paramId)
-		if !success {
-			return c.JSON(http.StatusNotFound, helper.FormatResponse("Request Product not found", errQuery))
-		}
-
-		return c.JSON(http.StatusOK, helper.FormatResponse("Success delete Request Product", nil))
 	}
 }
 
@@ -152,27 +120,11 @@ func (rpc *ReqProductsController) SearchReqProduct() echo.HandlerFunc {
 		keyword := c.QueryParam("keyword")
 		limit, _ := strconv.Atoi(c.QueryParam("limit"))
 		offset, _ := strconv.Atoi(c.QueryParam("offset"))
-		reqProducts, err := rpc.model.SearchReqProduct(keyword, limit, offset)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot search category products, something happened", err))
+		reqProducts, errQuery := rpc.model.SearchReqProduct(keyword, limit, offset)
+		if errQuery != nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot search category products, something happened", errQuery.Error()))
 		}
 
-		var searchResponse []response.ReqProductResponse
-
-		for _, reqProduct := range reqProducts {
-			searchResponse = append(searchResponse, response.ReqProductResponse{
-				Id:          reqProduct.Id,
-				IdEmployee:  reqProduct.IdEmployee,
-				ProductName: reqProduct.ProductName,
-				Quantity:    reqProduct.Quantity,
-				Note:        reqProduct.Note,
-				StatusReq:   reqProduct.StatusReq,
-				CreatedAt:   reqProduct.CreatedAt,
-				UpdatedAt:   reqProduct.UpdatedAt,
-				DeletedAt:   reqProduct.DeletedAt,
-			})
-		}
-
-		return c.JSON(http.StatusOK, helper.FormatResponse("Search category product success", searchResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Search category product success", reqProducts))
 	}
 }
