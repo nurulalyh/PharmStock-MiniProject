@@ -14,10 +14,10 @@ import (
 type Users struct {
 	Id           string         `gorm:"primaryKey;type:varchar(10)"`
 	Name         string         `gorm:"type:varchar(100);not null"`
-	Username     string         `gorm:"type:varchar(50);not null" valid:"required~your user name is required"`
-	Password     string         `gorm:"type:text;not null" valid:"required~your password is required,minstringlength(8)~Password has to have a minimum length of 6 characters"`
-	Email        string         `gorm:"type:varchar(50);not null" valid:"required~your email is required, email~invalid email format"`
-	Phone        string         `gorm:"type:varchar(15);not null" valid:"required~your phone is required"`
+	Username     string         `gorm:"type:varchar(50);not null"`
+	Password     string         `gorm:"type:text;not null"`
+	Email        string         `gorm:"type:varchar(50);not null"`
+	Phone        string         `gorm:"type:varchar(15);not null"`
 	Address      string         `gorm:"type:varchar(255);not null"`
 	Role         string         `gorm:"type:ENUM('administrator','apoteker');not null"`
 	CreatedAt    time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP"`

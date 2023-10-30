@@ -5,7 +5,7 @@ type LoginRequest struct {
 	Password string `json:"password" form:"password"`
 }
 
-type InsertUsersRequest struct {
+type UsersRequest struct {
 	Name     string `json:"name" form:"name"`
 	Username string `json:"username" form:"username"`
 	Password string `json:"password" form:"password"`
