@@ -56,8 +56,6 @@ func RouteTransaction(e *echo.Echo, tc controllers.TransactionsControllerInterfa
 
 	transaction.POST("", tc.CreateTransaction())
 	transaction.GET("", tc.GetAllTransaction())
-	transaction.PUT("/:id", tc.UpdateTransaction())
-	transaction.DELETE("/:id", tc.DeleteTransaction())
 	transaction.GET("/search", tc.SearchTransaction())
 }
 
