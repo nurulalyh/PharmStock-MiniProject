@@ -11,19 +11,19 @@ import (
 
 // Struct Users
 type Users struct {
-	Id           string         `gorm:"primaryKey;type:varchar(10)"`
-	Name         string         `gorm:"type:varchar(100);not null"`
-	Username     string         `gorm:"type:varchar(50);not null"`
-	Password     string         `gorm:"type:text;not null"`
-	Email        string         `gorm:"type:varchar(50);not null"`
-	Phone        string         `gorm:"type:varchar(15);not null"`
-	Address      string         `gorm:"type:varchar(255);not null"`
-	Role         string         `gorm:"type:ENUM('administrator','apoteker');not null"`
-	CreatedAt    time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP"`
-	UpdatedAt    time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP"`
-	DeletedAt    gorm.DeletedAt `gorm:"index"`
-	Transactions []Transactions `gorm:"foreignKey:id_employee;references:id"`
-	ReqProducts  []ReqProducts  `gorm:"foreignKey:id_employee;references:id"`
+	Id           string         `gorm:"primaryKey;type:varchar(10)" json:"id" form:"id"`
+	Name         string         `gorm:"type:varchar(100);not null" json:"name" form:"name"`
+	Username     string         `gorm:"type:varchar(50);not null" json:"username" form:"username"`
+	Password     string         `gorm:"type:text;not null" json:"password" form:"password"`
+	Email        string         `gorm:"type:varchar(50);not null" json:"email" form:"email"`
+	Phone        string         `gorm:"type:varchar(15);not null" json:"phone" form:"phone"`
+	Address      string         `gorm:"type:varchar(255);not null" json:"address" form:"address"`
+	Role         string         `gorm:"type:ENUM('administrator','apoteker');not null" json:"role" form:"role"`
+	CreatedAt    time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"created_at" form:"created_at"`
+	UpdatedAt    time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"updated_at" form:"updated_at"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deleted_at" form:"deleted_at"`
+	Transactions []Transactions `gorm:"foreignKey:id_employee;references:id" json:"history_transaction" form:"history_transaction"`
+	ReqProducts  []ReqProducts  `gorm:"foreignKey:id_employee;references:id" json:"history_request_product" form:"history_request_product"`
 }
 
 // Interface beetween models and controller
@@ -113,14 +113,6 @@ func (um *UsersModel) SelectAll(limit, offset int) ([]Users, error) {
 	return data, nil
 }
 
-// func (um *UsersModel) SelectAll(limit, offset int) ([]Users, error) {
-// 	var data []Users
-// 	if err := um.db.Limit(limit).Offset(offset).Find(&data).Error; err != nil {
-// 		return nil, errors.New("Cannot get all users, " + err.Error())
-// 	}
-// 	return data, nil
-// }
-
 // Update User
 func (um *UsersModel) Update(updatedData Users) (*Users, error) {
 	var data map[string]interface{} = make(map[string]interface{})
@@ -198,10 +190,6 @@ func (um *UsersModel) SearchUsers(keyword string, limit int, offset int) ([]User
 		Find(&users).Error; err != nil {
 		return nil, errors.New("Error search data, " + err.Error())
 	}
-
-	// if err := query.Find(&users).Error; err != nil {
-	// 	return nil, errors.New("Error search data, " + err.Error())
-	// }
 
 	return users, nil
 }

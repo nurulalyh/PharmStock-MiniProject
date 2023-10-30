@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 	"pharm-stock/configs"
+	"pharm-stock/helper"
 	"pharm-stock/models"
 	"pharm-stock/utils/request"
 	"pharm-stock/utils/response"
@@ -36,9 +37,9 @@ func NewCatProductsControllerInterface(m models.CatProductsModelInterface) CatPr
 // Create Category Product
 func (cpc *CatProductsController) CreateCatProduct() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var input = request.InsertCategoryProductRequest{}
+		var input = request.CategoryProductRequest{}
 		if errBind := c.Bind(&input); errBind != nil {
-			return c.JSON(http.StatusBadRequest, response.FormatResponse("invalid category product input", errBind))
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid category product input", errBind.Error()))
 		}
 
 		var newCatProduct = models.CatProducts{}
@@ -46,17 +47,15 @@ func (cpc *CatProductsController) CreateCatProduct() echo.HandlerFunc {
 
 		var res, errQuery = cpc.model.Insert(newCatProduct)
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Cannot process data, something happend", errQuery.Error()))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", errQuery.Error()))
 		}
 
-		var insertResponse = response.CatProductsResponse{}
+		var insertResponse = response.InsertCatProductsResponse{}
 		insertResponse.Id = res.Id
 		insertResponse.Name = res.Name
 		insertResponse.CreatedAt = res.CreatedAt
-		insertResponse.UpdatedAt = res.UpdatedAt
-		insertResponse.DeletedAt = res.DeletedAt
 
-		return c.JSON(http.StatusCreated, response.FormatResponse("success create category product", insertResponse))
+		return c.JSON(http.StatusCreated, helper.FormatResponse("success create category product", insertResponse))
 	}
 }
 
@@ -68,22 +67,10 @@ func (cpc *CatProductsController) GetAllCatProduct() echo.HandlerFunc {
 
 		var res, err = cpc.model.SelectAll(limit, offset)
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Error get all category product, ", err))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all category product, ", err.Error()))
 		}
 
-		var getAllResponse []response.CatProductsResponse
-
-		for _, catProduct := range res {
-			getAllResponse = append(getAllResponse, response.CatProductsResponse{
-				Id:        catProduct.Id,
-				Name:      catProduct.Name,
-				CreatedAt: catProduct.CreatedAt,
-				UpdatedAt: catProduct.UpdatedAt,
-				DeletedAt: catProduct.DeletedAt,
-			})
-		}
-
-		return c.JSON(http.StatusOK, response.FormatResponse("Success get all category product, ", getAllResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all category product, ", res))
 	}
 }
 
@@ -93,24 +80,23 @@ func (cpc *CatProductsController) UpdateCatProduct() echo.HandlerFunc {
 		var paramId = c.Param("id")
 		var input = models.CatProducts{}
 		if errBind := c.Bind(&input); errBind != nil {
-			return c.JSON(http.StatusBadRequest, response.FormatResponse("invalid category product input", errBind))
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid category product input", errBind.Error()))
 		}
 
 		input.Id = paramId
 
 		var res, errQuery = cpc.model.Update(input)
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("cannot process data, something happend", errQuery))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", errQuery.Error()))
 		}
 
-		updateResponse := response.CatProductsResponse{}
+		updateResponse := response.UpdateCatProductsResponse{}
 		updateResponse.Id = res.Id
 		updateResponse.Name = res.Name
 		updateResponse.CreatedAt = res.CreatedAt
 		updateResponse.UpdatedAt = res.UpdatedAt
-		updateResponse.DeletedAt = res.DeletedAt
-
-		return c.JSON(http.StatusOK, response.FormatResponse("Success update data", updateResponse))
+		
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", updateResponse))
 	}
 }
 
@@ -121,10 +107,10 @@ func (cpc *CatProductsController) DeleteCatProduct() echo.HandlerFunc {
 
 	  success, errQuery := cpc.model.Delete(paramId)
 	  if !success {
-		return c.JSON(http.StatusNotFound, response.FormatResponse("Category product not found", errQuery))
+		return c.JSON(http.StatusNotFound, helper.FormatResponse("Category product not found", errQuery.Error()))
 	  }
 
-	  return c.JSON(http.StatusOK, response.FormatResponse("Success delete category product", nil))
+	  return c.JSON(http.StatusOK, helper.FormatResponse("Success delete category product", nil))
 	}
 }
 
@@ -134,23 +120,11 @@ func (cpc *CatProductsController) SearchCatProduct() echo.HandlerFunc {
 		keyword := c.QueryParam("keyword")
 		limit, _ := strconv.Atoi(c.QueryParam("limit"))
 		offset, _ := strconv.Atoi(c.QueryParam("offset"))
-		catProducts, err := cpc.model.SearchCatProduct(keyword, limit, offset)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Cannot search category products, something happened", err))
+		catProducts, errQuery := cpc.model.SearchCatProduct(keyword, limit, offset)
+		if errQuery != nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot search category products, something happened", errQuery.Error()))
 		}
 
-		var searchResponse []response.CatProductsResponse
-
-		for _, catProduct := range catProducts {
-			searchResponse = append(searchResponse, response.CatProductsResponse{
-				Id:        catProduct.Id,
-				Name:      catProduct.Name,
-				CreatedAt: catProduct.CreatedAt,
-				UpdatedAt: catProduct.UpdatedAt,
-				DeletedAt: catProduct.DeletedAt,
-			})
-		}
-
-		return c.JSON(http.StatusOK, response.FormatResponse("Search category product success", searchResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Search category product success", catProducts))
 	}
 }

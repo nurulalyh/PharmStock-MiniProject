@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 	"pharm-stock/configs"
+	"pharm-stock/helper"
 	"pharm-stock/models"
 	"pharm-stock/utils/request"
 	"pharm-stock/utils/response"
@@ -38,7 +39,7 @@ func (dtc *DetailTransactionsController) CreateDetailTransaction() echo.HandlerF
 	return func(c echo.Context) error {
 		var input = request.InsertDetailTransactionsRequest{}
 		if errBind := c.Bind(&input); errBind != nil {
-			return c.JSON(http.StatusBadRequest, response.FormatResponse("invalid Detail Transaction input", errBind))
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Detail Transaction input", errBind))
 		}
 
 		var newDetailTransaction = models.DetailTransactions{}
@@ -49,7 +50,7 @@ func (dtc *DetailTransactionsController) CreateDetailTransaction() echo.HandlerF
 		
 		var res, errQuery = dtc.model.Insert(newDetailTransaction)
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Cannot process data, something happend", errQuery))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", errQuery))
 		}
 
 		var insertResponse = response.DetailTransactionsResponse{}
@@ -62,7 +63,7 @@ func (dtc *DetailTransactionsController) CreateDetailTransaction() echo.HandlerF
 		insertResponse.UpdatedAt = res.UpdatedAt
 		insertResponse.DeletedAt = res.DeletedAt
 
-		return c.JSON(http.StatusCreated, response.FormatResponse("success create Detail Transaction", insertResponse))
+		return c.JSON(http.StatusCreated, helper.FormatResponse("success create Detail Transaction", insertResponse))
 	}
 }
 
@@ -75,7 +76,7 @@ func (dtc *DetailTransactionsController) GetAllDetailTransaction() echo.HandlerF
 		var res, err = dtc.model.SelectAll(limit, offset)
 
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Error get all Detail Transaction, ", err))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all Detail Transaction, ", err))
 		}
 
 		var getAllResponse []response.DetailTransactionsResponse
@@ -93,7 +94,7 @@ func (dtc *DetailTransactionsController) GetAllDetailTransaction() echo.HandlerF
 			})
 		}
 
-		return c.JSON(http.StatusOK, response.FormatResponse("Success get all Detail Transaction, ", getAllResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all Detail Transaction, ", getAllResponse))
 	}
 }
 
@@ -103,14 +104,14 @@ func (dtc *DetailTransactionsController) UpdateDetailTransaction() echo.HandlerF
 		var paramId = c.Param("id")
 		var input = models.DetailTransactions{}
 		if errBind := c.Bind(&input); errBind != nil {
-			return c.JSON(http.StatusBadRequest, response.FormatResponse("invalid Detail Transaction input", errBind))
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Detail Transaction input", errBind))
 		}
 
 		input.Id = paramId
 
 		var res, errQuery = dtc.model.Update(input)
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("cannot process data, something happend", errQuery.Error()))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", errQuery.Error()))
 		}
 
 		updateResponse := response.DetailTransactionsResponse{}
@@ -123,7 +124,7 @@ func (dtc *DetailTransactionsController) UpdateDetailTransaction() echo.HandlerF
 		updateResponse.UpdatedAt = res.UpdatedAt
 		updateResponse.DeletedAt = res.DeletedAt
 
-		return c.JSON(http.StatusOK, response.FormatResponse("Success update data", updateResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", updateResponse))
 	}
 }
 
@@ -134,10 +135,10 @@ func (dtc *DetailTransactionsController) DeleteDetailTransaction() echo.HandlerF
 
 		success, errQuery := dtc.model.Delete(paramId)
 		if !success {
-			return c.JSON(http.StatusNotFound, response.FormatResponse("Detail Transaction not found", errQuery))
+			return c.JSON(http.StatusNotFound, helper.FormatResponse("Detail Transaction not found", errQuery))
 		}
 
-		return c.JSON(http.StatusOK, response.FormatResponse("Success delete Detail Transaction", nil))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success delete Detail Transaction", nil))
 	}
 }
 
@@ -149,7 +150,7 @@ func (dtc *DetailTransactionsController) SearchDetailTransaction() echo.HandlerF
 		offset, _ := strconv.Atoi(c.QueryParam("offset"))
 		DetailTransactions, err := dtc.model.SearchDetailTransaction(keyword, limit, offset)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Cannot search category products, something happened", err))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot search category products, something happened", err))
 		}
 
 		var searchResponse []response.DetailTransactionsResponse
@@ -167,6 +168,6 @@ func (dtc *DetailTransactionsController) SearchDetailTransaction() echo.HandlerF
 			})
 		}
 
-		return c.JSON(http.StatusOK, response.FormatResponse("Search category product success", searchResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Search category product success", searchResponse))
 	}
 }
