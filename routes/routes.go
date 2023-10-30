@@ -48,7 +48,6 @@ func RouteReqProduct(e *echo.Echo, rpc controllers.ReqProductsControllerInterfac
 	reqProduct.POST("", rpc.CreateReqProduct())
 	reqProduct.GET("", rpc.GetAllReqProduct())
 	reqProduct.PUT("/:id", rpc.UpdateReqProduct())
-	reqProduct.DELETE("/:id", rpc.DeleteReqProduct())
 	reqProduct.GET("/search", rpc.SearchReqProduct())
 }
 
