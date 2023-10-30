@@ -5,18 +5,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 // Struct Category Products
 type CatProducts struct {
-	Id        string         `gorm:"primaryKey;type:varchar(10)"`
-	Name      string         `gorm:"type:varchar(100);not null"`
-	CreatedAt time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP"`
-	UpdatedAt time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP"`
-	DeletedAt gorm.DeletedAt `gorm:"index"`
-	Product   []Products     `gorm:"foreignKey:id_cat_product;references:id"`
+	Id        string         `gorm:"primaryKey;type:varchar(10)" json:"id" form:"id"`
+	Name      string         `gorm:"type:varchar(100);not null" json:"name" form:"name"`
+	CreatedAt time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"created_at" form:"created_at"`
+	UpdatedAt time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"updated_at" form:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at" form:"deleted_at"`
+	Products  []Products     `gorm:"foreignKey:id_cat_product;references:id" json:"product" form:"product"`
 }
 
 // Interface beetween models and controller
@@ -44,24 +43,28 @@ func NewCatProductsModel(db *gorm.DB) CatProductsModelInterface {
 func (cpm *CatProductsModel) Insert(newCatProduct CatProducts) (*CatProducts, error) {
 	var latestCatProduct CatProducts
 	if errSort := cpm.db.Unscoped().Order("id DESC").First(&latestCatProduct).Error; errSort != nil {
-    	latestCatProduct.Id = "CPT-0000"
+		latestCatProduct.Id = "CPT-0000"
 	}
 
 	newID := generateCatProductId(latestCatProduct.Id)
 	if newID == "" {
-    	return nil, errors.New("Failed generate Id")
+		return nil, errors.New("Failed generate Id")
 	}
 
 	newCatProduct.Id = newID
 
-	validate := validateCatProduct(newCatProduct)
+	validate, errValidate := validateCatProduct(newCatProduct)
 	if !validate {
-		return nil, errors.New("Data not valid")
+		return nil, errValidate
 	}
 
 	if checkName := cpm.db.Where("name = ?", newCatProduct.Name).First(&newCatProduct).Error; checkName != nil {
-		if err := cpm.db.Create(&newCatProduct).Error; err != nil {
-			return nil, errors.New("Error insert category product, " + err.Error())
+		if checkName == gorm.ErrRecordNotFound {
+			if err := cpm.db.Create(&newCatProduct).Error; err != nil {
+				return nil, errors.New("Error insert category product, " + err.Error())
+			}
+		} else {
+			return nil, errors.New("Error checking category product availability")
 		}
 	} else {
 		return nil, errors.New("Category product already exists")
@@ -73,8 +76,13 @@ func (cpm *CatProductsModel) Insert(newCatProduct CatProducts) (*CatProducts, er
 // Select All Category Product
 func (cpm *CatProductsModel) SelectAll(limit, offset int) ([]CatProducts, error) {
 	var data = []CatProducts{}
-	if err := cpm.db.Limit(limit).Offset(offset).Find(&data).Error; err != nil {
-		return nil, errors.New("Cannot get all category product, " + err.Error())
+
+	if err := cpm.db.
+		Limit(limit).
+		Offset(offset).
+		Preload("Products").
+		Find(&data).Error; err != nil {
+		return nil, errors.New("Cannot get category product with products, " + err.Error())
 	}
 
 	return data, nil
@@ -118,9 +126,13 @@ func (cpm *CatProductsModel) Delete(catProductId string) (bool, error) {
 // Searching
 func (cpm *CatProductsModel) SearchCatProduct(keyword string, limit int, offset int) ([]CatProducts, error) {
 	var catProduct []CatProducts
-	query := cpm.db.Where("id LIKE ? OR name LIKE ? OR created_at LIKE ? OR updated_at LIKE ? OR deleted_at LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%").Limit(limit).Offset(offset)
+	query := cpm.db.Limit(limit).Offset(offset).Where("id LIKE ? OR name LIKE ? OR created_at LIKE ? OR updated_at LIKE ? OR deleted_at LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 
-	if err := query.Find(&catProduct).Error; err != nil {
+	if err := query.
+		Limit(limit).
+		Offset(offset).
+		Preload("Products").
+		Find(&catProduct).Error; err != nil {
 		return nil, errors.New("Error search data, " + err.Error())
 	}
 
@@ -138,15 +150,13 @@ func generateCatProductId(latestID string) string {
 }
 
 // Validate
-func validateCatProduct(catProduct CatProducts) bool {
+func validateCatProduct(catProduct CatProducts) (bool, error) {
 	if catProduct.Id == "" || len(catProduct.Id) > 10 {
-		logrus.Error("Model: Id is required and must be up to 10 characters")
-		return false
+		return false, errors.New("Id is required and must be up to 10 characters")
 	}
 	if catProduct.Name == "" || len(catProduct.Name) > 100 {
-		logrus.Error("Model: Product name is required and must be up to 100 characters")
-		return false
+		return false, errors.New("Name is required and must be up to 100 characters")
 	}
 
-	return true
+	return true, nil
 }

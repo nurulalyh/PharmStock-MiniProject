@@ -13,7 +13,7 @@ type LoginResponse struct {
 	RefreshToken any    `json:"refresh_token" form:"refresh_token"`
 }
 
-type InsertResponse struct {
+type InsertUsersResponse struct {
 	Id        string    `json:"id" form:"id"`
 	Name      string    `json:"name" form:"name"`
 	Username  string    `json:"username" form:"username"`
@@ -24,7 +24,7 @@ type InsertResponse struct {
 	CreatedAt time.Time `json:"created_at" form:"created_at"`
 }
 
-type UpdateResponse struct {
+type UpdateUsersResponse struct {
 	Id        string    `json:"id" form:"id"`
 	Name      string    `json:"name" form:"name"`
 	Username  string    `json:"username" form:"username"`

@@ -1,5 +1,5 @@
 package request
 
-type InsertCategoryProductRequest struct {
+type CategoryProductRequest struct {
 	Name     string `json:"name" form:"name"`
 }

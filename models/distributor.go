@@ -11,12 +11,12 @@ import (
 
 // Struct Distributor
 type Distributors struct {
-	Id        string         `gorm:"primaryKey;type:varchar(10)"`
-	Name      string         `gorm:"type:varchar(100);not null"`
-	CreatedAt time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP"`
-	UpdatedAt time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP"`
-	DeletedAt gorm.DeletedAt `gorm:"index"`
-	Product   []Products     `gorm:"foreignKey:id_distributor;references:Id"`
+	Id        string         `gorm:"primaryKey;type:varchar(10)" json:"id" form:"id"`
+	Name      string         `gorm:"type:varchar(100);not null" json:"name" form:"name"`
+	CreatedAt time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"created_at" form:"created_at"`
+	UpdatedAt time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"updated_at" form:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at" form:"deleted_at"`
+	Products   []Products     `gorm:"foreignKey:id_distributor;references:Id" json:"product" form:"product"`
 }
 
 // Interface beetween models and controller

@@ -1,5 +1,5 @@
 package request
 
-type InsertDistributorsRequest struct {
+type DistributorsRequest struct {
 	Name     string `json:"name" form:"name"`
 }

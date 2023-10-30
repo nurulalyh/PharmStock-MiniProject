@@ -104,7 +104,7 @@ func (uc *UsersController) CreateUser() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", errQuery.Error()))
 		}
 
-		var insertResponse = response.InsertResponse{}
+		var insertResponse = response.InsertUsersResponse{}
 		insertResponse.Id = res.Id
 		insertResponse.Name = res.Name
 		insertResponse.Username = res.Username
@@ -125,8 +125,7 @@ func (uc *UsersController) GetAllUsers() echo.HandlerFunc {
 		offset, _ := strconv.Atoi(c.QueryParam("offset"))
 
 		var res, err = uc.model.SelectAll(limit, offset)
-
-		if err != nil {
+		if res == nil {
 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all users", err.Error()))
 		}
 
@@ -150,7 +149,7 @@ func (uc *UsersController) UpdateUser() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", errQuery.Error()))
 		}
 
-		updateResponse := response.UpdateResponse{}
+		updateResponse := response.UpdateUsersResponse{}
 		updateResponse.Id = res.Id
 		updateResponse.Name = res.Name
 		updateResponse.Username = res.Username
@@ -221,7 +220,7 @@ func (uc *UsersController) CreateAdmin() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", errQuery.Error()))
 		}
 
-		var insertResponse = response.InsertResponse{}
+		var insertResponse = response.InsertUsersResponse{}
 		insertResponse.Id = res.Id
 		insertResponse.Name = res.Name
 		insertResponse.Username = res.Username

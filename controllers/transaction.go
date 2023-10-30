@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 	"pharm-stock/configs"
+	"pharm-stock/helper"
 	"pharm-stock/models"
 	"pharm-stock/utils/request"
 	"pharm-stock/utils/response"
@@ -38,7 +39,7 @@ func (tc *TransactionsController) CreateTransaction() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var input = request.InsertTransactionsRequest{}
 		if errBind := c.Bind(&input); errBind != nil {
-			return c.JSON(http.StatusBadRequest, response.FormatResponse("invalid Transaction input", errBind))
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Transaction input", errBind))
 		}
 
 		var newTransaction = models.Transactions{}
@@ -47,7 +48,7 @@ func (tc *TransactionsController) CreateTransaction() echo.HandlerFunc {
 
 		var res, errQuery = tc.model.Insert(newTransaction)
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Cannot process data, something happend", errQuery))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", errQuery))
 		}
 
 		var insertResponse = response.TransactionResponse{}
@@ -60,7 +61,7 @@ func (tc *TransactionsController) CreateTransaction() echo.HandlerFunc {
 		insertResponse.UpdatedAt = res.UpdatedAt
 		insertResponse.DeletedAt = res.DeletedAt
 
-		return c.JSON(http.StatusCreated, response.FormatResponse("success create Request Product", insertResponse))
+		return c.JSON(http.StatusCreated, helper.FormatResponse("success create Request Product", insertResponse))
 	}
 }
 
@@ -73,7 +74,7 @@ func (tc *TransactionsController) GetAllTransaction() echo.HandlerFunc {
 		var res, err = tc.model.SelectAll(limit, offset)
 
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Error get all Request Product, ", err))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all Request Product, ", err))
 		}
 
 		var getAllResponse []response.TransactionResponse
@@ -91,7 +92,7 @@ func (tc *TransactionsController) GetAllTransaction() echo.HandlerFunc {
 			})
 		}
 
-		return c.JSON(http.StatusOK, response.FormatResponse("Success get all Request Product, ", getAllResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all Request Product, ", getAllResponse))
 	}
 }
 
@@ -101,14 +102,14 @@ func (tc *TransactionsController) UpdateTransaction() echo.HandlerFunc {
 		var paramId = c.Param("id")
 		var input = models.Transactions{}
 		if errBind := c.Bind(&input); errBind != nil {
-			return c.JSON(http.StatusBadRequest, response.FormatResponse("invalid Request Product input", errBind))
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Request Product input", errBind))
 		}
 
 		input.Id = paramId
 
 		var res, errQuery = tc.model.Update(input)
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("cannot process data, something happend", errQuery.Error()))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", errQuery.Error()))
 		}
 
 		updateResponse := response.TransactionResponse{}
@@ -121,7 +122,7 @@ func (tc *TransactionsController) UpdateTransaction() echo.HandlerFunc {
 		updateResponse.UpdatedAt = res.UpdatedAt
 		updateResponse.DeletedAt = res.DeletedAt
 
-		return c.JSON(http.StatusOK, response.FormatResponse("Success update data", updateResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", updateResponse))
 	}
 }
 
@@ -132,10 +133,10 @@ func (tc *TransactionsController) DeleteTransaction() echo.HandlerFunc {
 
 		success, errQuery := tc.model.Delete(paramId)
 		if !success {
-			return c.JSON(http.StatusNotFound, response.FormatResponse("Request Product not found", errQuery))
+			return c.JSON(http.StatusNotFound, helper.FormatResponse("Request Product not found", errQuery))
 		}
 
-		return c.JSON(http.StatusOK, response.FormatResponse("Success delete Request Product", nil))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success delete Request Product", nil))
 	}
 }
 
@@ -147,7 +148,7 @@ func (tc *TransactionsController) SearchTransaction() echo.HandlerFunc {
 		offset, _ := strconv.Atoi(c.QueryParam("offset"))
 		transactions, err := tc.model.SearchTransaction(keyword, limit, offset)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Cannot search category products, something happened", err))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot search category products, something happened", err))
 		}
 
 		var searchResponse []response.TransactionResponse
@@ -165,6 +166,6 @@ func (tc *TransactionsController) SearchTransaction() echo.HandlerFunc {
 			})
 		}
 
-		return c.JSON(http.StatusOK, response.FormatResponse("Search category product success", searchResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Search category product success", searchResponse))
 	}
 }

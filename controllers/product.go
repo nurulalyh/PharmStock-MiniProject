@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 	"pharm-stock/configs"
+	"pharm-stock/helper"
 	"pharm-stock/models"
 	"pharm-stock/utils/request"
 	"pharm-stock/utils/response"
@@ -38,7 +39,7 @@ func (pc *ProductsController) CreateProduct() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var input = request.InsertProductRequest{}
 		if errBind := c.Bind(&input); errBind != nil {
-			return c.JSON(http.StatusBadRequest, response.FormatResponse("invalid Product input", errBind))
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Product input", errBind))
 		}
 
 		var newProduct = models.Products{}
@@ -55,7 +56,7 @@ func (pc *ProductsController) CreateProduct() echo.HandlerFunc {
 
 		var res, errQuery = pc.model.Insert(newProduct)
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Cannot process data, something happend", errQuery))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", errQuery))
 		}
 
 		var insertResponse = response.ProductResponse{}
@@ -74,7 +75,7 @@ func (pc *ProductsController) CreateProduct() echo.HandlerFunc {
 		insertResponse.UpdatedAt = res.UpdatedAt
 		insertResponse.DeletedAt = res.DeletedAt
 
-		return c.JSON(http.StatusCreated, response.FormatResponse("success create Product", insertResponse))
+		return c.JSON(http.StatusCreated, helper.FormatResponse("success create Product", insertResponse))
 	}
 }
 
@@ -87,7 +88,7 @@ func (pc *ProductsController) GetAllProduct() echo.HandlerFunc {
 		var res, err = pc.model.SelectAll(limit, offset)
 
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Error get all Product, ", err))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all Product, ", err))
 		}
 
 		var getAllResponse []response.ProductResponse
@@ -111,7 +112,7 @@ func (pc *ProductsController) GetAllProduct() echo.HandlerFunc {
 			})
 		}
 
-		return c.JSON(http.StatusOK, response.FormatResponse("Success get all Product, ", getAllResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all Product, ", getAllResponse))
 	}
 }
 
@@ -121,14 +122,14 @@ func (pc *ProductsController) UpdateProduct() echo.HandlerFunc {
 		var paramId = c.Param("id")
 		var input = models.Products{}
 		if errBind := c.Bind(&input); errBind != nil {
-			return c.JSON(http.StatusBadRequest, response.FormatResponse("invalid Product input", errBind))
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Product input", errBind))
 		}
 
 		input.Id = paramId
 
 		var res, errQuery = pc.model.Update(input)
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("cannot process data, something happend", errQuery.Error()))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", errQuery.Error()))
 		}
 
 		updateResponse := response.ProductResponse{}
@@ -147,7 +148,7 @@ func (pc *ProductsController) UpdateProduct() echo.HandlerFunc {
 		updateResponse.UpdatedAt = res.UpdatedAt
 		updateResponse.DeletedAt = res.DeletedAt
 
-		return c.JSON(http.StatusOK, response.FormatResponse("Success update data", updateResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", updateResponse))
 	}
 }
 
@@ -158,10 +159,10 @@ func (pc *ProductsController) DeleteProduct() echo.HandlerFunc {
 
 		success, errQuery := pc.model.Delete(paramId)
 		if !success {
-			return c.JSON(http.StatusNotFound, response.FormatResponse("Product not found", errQuery))
+			return c.JSON(http.StatusNotFound, helper.FormatResponse("Product not found", errQuery))
 		}
 
-		return c.JSON(http.StatusOK, response.FormatResponse("Success delete Product", nil))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success delete Product", nil))
 	}
 }
 
@@ -173,7 +174,7 @@ func (pc *ProductsController) SearchProduct() echo.HandlerFunc {
 		offset, _ := strconv.Atoi(c.QueryParam("offset"))
 		products, err := pc.model.SearchProduct(keyword, limit, offset)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, response.FormatResponse("Cannot search category products, something happened", err))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot search category products, something happened", err))
 		}
 
 		var searchResponse []response.ProductResponse
@@ -197,6 +198,6 @@ func (pc *ProductsController) SearchProduct() echo.HandlerFunc {
 			})
 		}
 
-		return c.JSON(http.StatusOK, response.FormatResponse("Search category product success", searchResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Search category product success", searchResponse))
 	}
 }
