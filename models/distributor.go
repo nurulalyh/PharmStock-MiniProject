@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -16,7 +15,7 @@ type Distributors struct {
 	CreatedAt time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"created_at" form:"created_at"`
 	UpdatedAt time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"updated_at" form:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at" form:"deleted_at"`
-	Products   []Products     `gorm:"foreignKey:id_distributor;references:Id" json:"product" form:"product"`
+	Products  []Products     `gorm:"foreignKey:id_distributor;references:Id" json:"product" form:"product"`
 }
 
 // Interface beetween models and controller
@@ -48,21 +47,24 @@ func (dm *DistributorsModel) Insert(newDistributor Distributors) (*Distributors,
 	}
 
 	newID := generateDistributorId(latestDistributor.Id)
-
 	if newID == "" {
 		return nil, errors.New("Failed generate Id")
 	}
 
 	newDistributor.Id = newID
 
-	validate := validateDistributor(newDistributor)
+	validate, errValidate := validateDistributor(newDistributor)
 	if !validate {
-		return nil, errors.New("Data not valid")
+		return nil, errValidate
 	}
 
 	if checkName := dm.db.Where("name = ?", newDistributor.Name).First(&newDistributor).Error; checkName != nil {
-		if err := dm.db.Create(&newDistributor).Error; err != nil {
-			return nil, errors.New("Error insert distributor, " + err.Error())
+		if checkName == gorm.ErrRecordNotFound {
+			if err := dm.db.Create(&newDistributor).Error; err != nil {
+				return nil, errors.New("Error insert distributor, " + err.Error())
+			}
+		} else {
+			return nil, errors.New("Error checking distributor name availability")
 		}
 	} else {
 		return nil, errors.New("Distributor already exists")
@@ -74,8 +76,13 @@ func (dm *DistributorsModel) Insert(newDistributor Distributors) (*Distributors,
 // Select All Distributor
 func (dm *DistributorsModel) SelectAll(limit int, offset int) ([]Distributors, error) {
 	var data = []Distributors{}
-	if err := dm.db.Limit(limit).Offset(offset).Find(&data).Error; err != nil {
-		return nil, errors.New("Cannot get all distributor, " + err.Error())
+
+	if err := dm.db.
+		Limit(limit).
+		Offset(offset).
+		Preload("Products").
+		Find(&data).Error; err != nil {
+		return nil, errors.New("Cannot get distributor with products, " + err.Error())
 	}
 
 	return data, nil
@@ -85,11 +92,11 @@ func (dm *DistributorsModel) SelectAll(limit int, offset int) ([]Distributors, e
 func (dm *DistributorsModel) Update(updatedData Distributors) (*Distributors, error) {
 	var qry = dm.db.Table("distributors").Where("id = ?", updatedData.Id).Update("name", updatedData.Name)
 	if err := qry.Error; err != nil {
-		return nil, errors.New("Update error, " + err.Error())
+		return nil, errors.New("Update data error, " + err.Error())
 	}
 
 	if dataCount := qry.RowsAffected; dataCount < 1 {
-		return nil, errors.New("Update error, no data effected")
+		return nil, errors.New("Update data error, no data effected")
 	}
 
 	var updatedDistributor = Distributors{}
@@ -119,9 +126,13 @@ func (dm *DistributorsModel) Delete(DistributorId string) (bool, error) {
 // Searching
 func (dm *DistributorsModel) SearchDistributor(keyword string, limit int, offset int) ([]Distributors, error) {
 	var distributor []Distributors
-	query := dm.db.Where("id LIKE ? OR name LIKE ? OR created_at LIKE ? OR updated_at LIKE ? OR deleted_at LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%").Limit(limit).Offset(offset)
+	query := dm.db.Limit(limit).Offset(offset).Where("id LIKE ? OR name LIKE ? OR created_at LIKE ? OR updated_at LIKE ? OR deleted_at LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 
-	if err := query.Find(&distributor).Error; err != nil {
+	if err := query.
+		Limit(limit).
+		Offset(offset).
+		Preload("Products").
+		Find(&distributor).Error; err != nil {
 		return nil, errors.New("Error search data, " + err.Error())
 	}
 
@@ -139,15 +150,13 @@ func generateDistributorId(latestID string) string {
 }
 
 // Validate
-func validateDistributor(distributor Distributors) bool {
+func validateDistributor(distributor Distributors) (bool, error) {
 	if distributor.Id == "" || len(distributor.Id) > 10 {
-		logrus.Error("Id is required and must be up to 10 characters")
-		return false
+		return false, errors.New("Id is required and must be up to 10 characters")
 	}
 	if distributor.Name == "" || len(distributor.Name) > 100 {
-		logrus.Error("Distributor name is required and must be up to 100 characters")
-		return false
+		return false, errors.New("Distributor name is required and must be up to 100 characters")
 	}
 
-	return true
+	return true, nil
 }
