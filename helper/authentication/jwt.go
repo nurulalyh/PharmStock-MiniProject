@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"pharm-stock/configs"
-	"pharm-stock/utils/response"
+	"pharm-stock/helper"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -18,7 +18,7 @@ func generateToken(signKey string, id string, username string, role string) (str
 	claims["username"] = username
 	claims["role"] = role
 	claims["iat"] = time.Now().Unix()
-	claims["exp"] = time.Now().Add(time.Minute * 10).Unix()
+	claims["exp"] = time.Now().Add(time.Hour * 1).Unix()
 
 	var sign = jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
@@ -134,7 +134,7 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		tokenString := c.Request().Header.Get("Authorization")
 		if tokenString == "" {
-			return c.JSON(http.StatusUnauthorized, response.FormatResponse("Token is required", nil))
+			return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Token is required", nil))
 		}
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -142,7 +142,7 @@ func JWTMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
-			return c.JSON(http.StatusUnauthorized, response.FormatResponse("Invalid token", err))
+			return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Invalid token", err))
 		}
 
 		return next(c)
