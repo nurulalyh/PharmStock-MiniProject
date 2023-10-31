@@ -65,7 +65,6 @@ func RouteProduct(e *echo.Echo, pc controllers.ProductsControllerInterface, cfg 
 	product.POST("", pc.CreateProduct())
 	product.GET("", pc.GetAllProduct())
 	product.PUT("/:id", pc.UpdateProduct())
-	product.DELETE("/:id", pc.DeleteProduct())
 	product.GET("/search", pc.SearchProduct())
 }
 

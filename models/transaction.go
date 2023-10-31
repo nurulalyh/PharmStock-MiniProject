@@ -89,8 +89,6 @@ func (tm *TransactionsModel) SearchTransaction(keyword string, limit int, offset
 	query := tm.db.Limit(limit).Offset(offset).Where("id LIKE ? OR id_employee LIKE ? OR total_quantity LIKE ? OR total_price LIKE ? OR type LIKE ? OR created_at LIKE ? OR updated_at LIKE ? OR deleted_at LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 
 	if err := query.
-		Limit(limit).
-		Offset(offset).
 		Preload("DetailTransactions").
 		Find(&transaction).Error; err != nil {
 		return nil, errors.New("Error search data, " + err.Error())
@@ -100,23 +98,46 @@ func (tm *TransactionsModel) SearchTransaction(keyword string, limit int, offset
 }
 
 // After Create to acumulate price and quantity from detail_transaction
-func (tm *TransactionsModel) AfterCreate (t *Transactions) error {
+func (tm *TransactionsModel) AfterCreate(t *Transactions) error {
 	var totalQuantity int
 	var totalPrice int
 	
-	if err := tm.db.Table("detail_transactions").Where("id_transaction = ?", t.Id).Select("SUM(quantity) as total_quantity, SUM(price) as total_price").Row().Scan(&totalQuantity, &totalPrice); err == nil {
-		t.TotalQuantity = totalQuantity
-		t.TotalPrice = totalPrice
+	if errQuery := tm.db.Table("detail_transactions").Where("id_transaction = ?", t.Id).Select("SUM(quantity) as total_quantity, SUM(price) as total_price").Row().Scan(&totalQuantity, &totalPrice); errQuery != nil {
+		return errQuery
+	}
+	
+	t.TotalQuantity = totalQuantity
+	t.TotalPrice = totalPrice
 
-		tm.db.Table("transactions").Where("id = ?", t.Id).UpdateColumns(map[string]interface{}{
-			"total_quantity": t.TotalQuantity,
-			"total_price":    t.TotalPrice,
-		})
-
-		return nil
-	} else {
+	if err := tm.db.Table("transactions").Where("id = ?", t.Id).UpdateColumns(map[string]interface{}{
+		"total_quantity": t.TotalQuantity,
+		"total_price":    t.TotalPrice,
+	}).Error; err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (t *Transactions) AfterCreate(tx *gorm.DB) (err error) {
+    var totalQuantity int
+    var totalPrice int
+
+    if errQuery := tx.Model(&DetailTransactions{}).Where("id_transaction = ?", t.Id).Select("SUM(quantity) as total_quantity, SUM(price) as total_price").Row().Scan(&totalQuantity, &totalPrice); errQuery == nil {
+		return errQuery
+	}
+
+	t.TotalQuantity = totalQuantity
+	t.TotalPrice = totalPrice
+
+	if err := tx.Model(&Transactions{}).Where("id = ?", t.Id).UpdateColumns(map[string]interface{}{
+	"TotalQuantity": t.TotalQuantity,
+	"TotalPrice":    t.TotalPrice,
+	}).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Generate Id
