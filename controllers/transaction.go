@@ -32,7 +32,7 @@ func NewTransactionsControllerInterface(m models.TransactionsModelInterface) Tra
 	}
 }
 
-// Create Request Product
+// Create Transaction
 func (tc *TransactionsController) CreateTransaction() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var input = request.TransactionsRequest{}
@@ -57,7 +57,7 @@ func (tc *TransactionsController) CreateTransaction() echo.HandlerFunc {
 		insertResponse.Type = res.Type
 		insertResponse.CreatedAt = res.CreatedAt
 
-		return c.JSON(http.StatusCreated, helper.FormatResponse("success create Request Product", insertResponse))
+		return c.JSON(http.StatusCreated, helper.FormatResponse("success create Transaction", insertResponse))
 	}
 }
 
@@ -70,10 +70,10 @@ func (tc *TransactionsController) GetAllTransaction() echo.HandlerFunc {
 		var res, err = tc.model.SelectAll(limit, offset)
 
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all Request Product, ", err.Error()))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all Transaction, ", err.Error()))
 		}
 
-		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all Request Product, ", res))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all Transaction, ", res))
 	}
 }
 

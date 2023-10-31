@@ -16,17 +16,17 @@ type Products struct {
 	Name              string               `gorm:"type:varchar(255);not null" json:"name" form:"name"`
 	Image             string               `gorm:"type:text;not null" json:"image" form:"image"`
 	IdCatProduct      string               `gorm:"type:varchar(10);not null" json:"id_cat_product" form:"id_cat_product"`
-	MfDate            time.Time            `gorm:"type:date;not null" json:"mf_date" form:"mf_date"`
-	ExpDate           time.Time            `gorm:"type:date;not null" json:"exp_date" form:"exp_date"`
+	MfDate            string               `gorm:"type:date;not null" json:"mf_date" form:"mf_date"`
+	ExpDate           string               `gorm:"type:date;not null" json:"exp_date" form:"exp_date"`
 	BatchNumber       int                  `gorm:"type:smallint;not null" json:"batch_number" form:"batch_number"`
-	UnitPrice         int                  `gorm:"type:smallint;not null" json:"unit_price" form:"unit_price"`
+	UnitPrice         int                  `gorm:"type:int;not null" json:"unit_price" form:"unit_price"`
 	Stock             int                  `gorm:"type:smallint;not null" json:"stock" form:"stock"`
 	Description       string               `gorm:"type:text;not null" json:"description" form:"description"`
 	IdDistributor     string               `gorm:"type:varchar(10);not null" json:"id_distributor" form:"id_distributor"`
 	CreatedAt         time.Time            `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"created_at" form:"created_at"`
 	UpdatedAt         time.Time            `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"updated_at" form:"updated_at"`
 	DeletedAt         gorm.DeletedAt       `gorm:"index" json:"deleted_at" form:"deleted_at"`
-	DetailTransaction []DetailTransactions `gorm:"foreignKey:id_product;references:Id" json:"transaction" form:"transaction"`
+	DetailTransactions []DetailTransactions `gorm:"foreignKey:id_product;references:Id" json:"transaction" form:"transaction"`
 }
 
 // Interface beetween models and controller
@@ -108,10 +108,10 @@ func (pm *ProductsModel) Update(updatedData Products) (*Products, error) {
 		}
 		data["id_cat_product"] = updatedData.IdCatProduct
 	}
-	if !updatedData.MfDate.IsZero() {
+	if updatedData.MfDate != "" {
 		data["mf_date"] = updatedData.MfDate
 	}
-	if !updatedData.ExpDate.IsZero() {
+	if updatedData.ExpDate != "" {
 		data["exp_date"] = updatedData.ExpDate
 	}
 	if updatedData.BatchNumber != 0 {
@@ -238,11 +238,11 @@ func validateProduct(product Products, db *gorm.DB) (bool, error) {
 		return false, errors.New("Id category product is not registered")
 	}
 
-	if product.MfDate.IsZero() {
+	if product.MfDate == "" {
 		return false, errors.New("Manufactoring date is required")
 	}
 
-	if product.MfDate.IsZero() {
+	if product.MfDate == "" {
 		return false, errors.New("Expire date is required")
 	}
 

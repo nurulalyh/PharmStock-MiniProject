@@ -9,8 +9,8 @@ type InsertProductResponse struct {
 	Name          string    `json:"name" form:"name"`
 	Image         string    `json:"image" form:"image"`
 	IdCatProduct  string    `json:"id_cat_product" form:"id_cat_product"`
-	MfDate        time.Time `json:"mf_date" form:"mf_date"`
-	ExpDate       time.Time `json:"exp_date" form:"exp_date"`
+	MfDate        string    `json:"mf_date" form:"mf_date"`
+	ExpDate       string    `json:"exp_date" form:"exp_date"`
 	BatchNumber   int       `json:"batch_number" form:"batch_number"`
 	UnitPrice     int       `json:"unit_price" form:"unit_price"`
 	Stock         int       `json:"stock" form:"stock"`
@@ -24,8 +24,8 @@ type UpdateProductResponse struct {
 	Name          string    `json:"name" form:"name"`
 	Image         string    `json:"image" form:"image"`
 	IdCatProduct  string    `json:"id_cat_product" form:"id_cat_product"`
-	MfDate        time.Time `json:"mf_date" form:"mf_date"`
-	ExpDate       time.Time `json:"exp_date" form:"exp_date"`
+	MfDate        string    `json:"mf_date" form:"mf_date"`
+	ExpDate       string    `json:"exp_date" form:"exp_date"`
 	BatchNumber   int       `json:"batch_number" form:"batch_number"`
 	UnitPrice     int       `json:"unit_price" form:"unit_price"`
 	Stock         int       `json:"stock" form:"stock"`

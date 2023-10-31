@@ -64,7 +64,7 @@ func (pc *ProductsController) CreateProduct() echo.HandlerFunc {
 		if !found {
 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Open AI API key not found", nil))
 		}
-		
+
 		generateDescription, errAI := pc.model.AIGenerateDescription(userInput, apiKey)
 		if errAI != nil {
 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error when generate description form AI", errAI.Error()))

@@ -69,11 +69,9 @@ func RouteProduct(e *echo.Echo, pc controllers.ProductsControllerInterface, cfg 
 }
 
 func RouteDetailTransaction(e *echo.Echo, dtc controllers.DetailTransactionsControllerInterface, cfg configs.Config) {
-	var detailTransaction = e.Group("/detailTransactions")
+	var detailTransaction = e.Group("/detailtransactions")
 
 	detailTransaction.POST("", dtc.CreateDetailTransaction())
 	detailTransaction.GET("", dtc.GetAllDetailTransaction())
-	detailTransaction.PUT("/:id", dtc.UpdateDetailTransaction())
-	detailTransaction.DELETE("/:id", dtc.DeleteDetailTransaction())
 	detailTransaction.GET("/search", dtc.SearchDetailTransaction())
 }
