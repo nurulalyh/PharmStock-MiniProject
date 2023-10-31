@@ -129,8 +129,6 @@ func (cpm *CatProductsModel) SearchCatProduct(keyword string, limit int, offset 
 	query := cpm.db.Limit(limit).Offset(offset).Where("id LIKE ? OR name LIKE ? OR created_at LIKE ? OR updated_at LIKE ? OR deleted_at LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 
 	if err := query.
-		Limit(limit).
-		Offset(offset).
 		Preload("Products").
 		Find(&catProduct).Error; err != nil {
 		return nil, errors.New("Error search data, " + err.Error())

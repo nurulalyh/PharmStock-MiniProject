@@ -138,6 +138,22 @@ func (dtm *DetailTransactionsModel) SearchDetailTransaction(keyword string, limi
 	return detailTransaction, nil
 }
 
+// Hook After Create to manage product stock and detail_transaction quantity
+func (dtm *DetailTransactionsModel) AfterCreate(dt *DetailTransactions) (err error) {
+    if err := dtm.db.Table("Products").Where("id = ?", dt.IdProduct).UpdateColumn("stock", gorm.Expr("stock - ?", dt.Quantity)).Error; err != nil {
+		return err
+	}
+    return nil
+}
+
+func (dt *DetailTransactions) AfterCreate(tx *gorm.DB) (err error) {
+    if err := tx.Model(&Products{}).Where("id = ?", dt.IdProduct).UpdateColumn("stock", gorm.Expr("stock - ?", dt.Quantity)).Error; err != nil {
+		return err
+	}
+    return nil
+}
+
+
 // Generate Id
 func generateDetailTransactionId(latestID string) string {
 	var numID int

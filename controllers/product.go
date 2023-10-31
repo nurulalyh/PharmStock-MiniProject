@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 	"pharm-stock/configs"
 	"pharm-stock/helper"
 	"pharm-stock/models"
@@ -17,7 +19,6 @@ type ProductsControllerInterface interface {
 	CreateProduct() echo.HandlerFunc
 	GetAllProduct() echo.HandlerFunc
 	UpdateProduct() echo.HandlerFunc
-	DeleteProduct() echo.HandlerFunc
 	SearchProduct() echo.HandlerFunc
 }
 
@@ -37,32 +38,59 @@ func NewProductsControllerInterface(m models.ProductsModelInterface) ProductsCon
 // Create Product
 func (pc *ProductsController) CreateProduct() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var input = request.InsertProductRequest{}
+		var input = request.ProductRequest{}
 		if errBind := c.Bind(&input); errBind != nil {
-			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Product input", errBind))
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Product input", errBind.Error()))
+		}
+
+		file, errImg := c.FormFile("image")
+		if errImg != nil {
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("Image not found, upload image before add product", errImg.Error()))
+		}
+
+		src, errOpen := file.Open()
+		if errOpen != nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error open image", errOpen.Error()))
+		}
+		defer src.Close()
+
+		url, _, errUpload := helper.UploadImage(src)
+		if errUpload != nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error upload image to cloudinary", errUpload.Error()))
+		}
+
+		userInput := fmt.Sprintf("Deskripsi singkat dalam paragraf mengenai %s dan indikasinya", input.Name)
+		apiKey, found := os.LookupEnv("OPENAI_API_KEY")
+		if !found {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Open AI API key not found", nil))
+		}
+		
+		generateDescription, errAI := pc.model.AIGenerateDescription(userInput, apiKey)
+		if errAI != nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error when generate description form AI", errAI.Error()))
 		}
 
 		var newProduct = models.Products{}
 		newProduct.Name = input.Name
-		newProduct.Photo = input.Photo
+		newProduct.Image = url
 		newProduct.IdCatProduct = input.IdCatProduct
 		newProduct.MfDate = input.MfDate
 		newProduct.ExpDate = input.ExpDate
 		newProduct.BatchNumber = input.BatchNumber
 		newProduct.UnitPrice = input.UnitPrice
 		newProduct.Stock = input.Stock
-		newProduct.Description = input.Description
+		newProduct.Description = generateDescription
 		newProduct.IdDistributor = input.IdDistributor
 
 		var res, errQuery = pc.model.Insert(newProduct)
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", errQuery))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", errQuery.Error()))
 		}
 
-		var insertResponse = response.ProductResponse{}
+		var insertResponse = response.InsertProductResponse{}
 		insertResponse.Id = res.Id
 		insertResponse.Name = res.Name
-		insertResponse.Photo = res.Photo
+		insertResponse.Image = res.Image
 		insertResponse.IdCatProduct = res.IdCatProduct
 		insertResponse.MfDate = res.MfDate
 		insertResponse.ExpDate = res.ExpDate
@@ -72,8 +100,6 @@ func (pc *ProductsController) CreateProduct() echo.HandlerFunc {
 		insertResponse.Description = res.Description
 		insertResponse.IdDistributor = res.IdDistributor
 		insertResponse.CreatedAt = res.CreatedAt
-		insertResponse.UpdatedAt = res.UpdatedAt
-		insertResponse.DeletedAt = res.DeletedAt
 
 		return c.JSON(http.StatusCreated, helper.FormatResponse("success create Product", insertResponse))
 	}
@@ -88,31 +114,10 @@ func (pc *ProductsController) GetAllProduct() echo.HandlerFunc {
 		var res, err = pc.model.SelectAll(limit, offset)
 
 		if res == nil {
-			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all Product, ", err))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all Product, ", err.Error()))
 		}
 
-		var getAllResponse []response.ProductResponse
-
-		for _, product := range res {
-			getAllResponse = append(getAllResponse, response.ProductResponse{
-				Id:            product.Id,
-				Name:          product.Name,
-				Photo:         product.Photo,
-				IdCatProduct:  product.IdCatProduct,
-				MfDate:        product.MfDate,
-				ExpDate:       product.ExpDate,
-				BatchNumber:   product.BatchNumber,
-				UnitPrice:     product.UnitPrice,
-				Stock:         product.Stock,
-				Description:   product.Description,
-				IdDistributor: product.IdDistributor,
-				CreatedAt:     product.CreatedAt,
-				UpdatedAt:     product.UpdatedAt,
-				DeletedAt:     product.DeletedAt,
-			})
-		}
-
-		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all Product, ", getAllResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all Product, ", res))
 	}
 }
 
@@ -122,7 +127,7 @@ func (pc *ProductsController) UpdateProduct() echo.HandlerFunc {
 		var paramId = c.Param("id")
 		var input = models.Products{}
 		if errBind := c.Bind(&input); errBind != nil {
-			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Product input", errBind))
+			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Product input", errBind.Error()))
 		}
 
 		input.Id = paramId
@@ -132,10 +137,10 @@ func (pc *ProductsController) UpdateProduct() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", errQuery.Error()))
 		}
 
-		updateResponse := response.ProductResponse{}
+		updateResponse := response.UpdateProductResponse{}
 		updateResponse.Id = res.Id
 		updateResponse.Name = res.Name
-		updateResponse.Photo = res.Photo
+		updateResponse.Image = res.Image
 		updateResponse.IdCatProduct = res.IdCatProduct
 		updateResponse.MfDate = res.MfDate
 		updateResponse.ExpDate = res.ExpDate
@@ -146,23 +151,8 @@ func (pc *ProductsController) UpdateProduct() echo.HandlerFunc {
 		updateResponse.IdDistributor = res.IdDistributor
 		updateResponse.CreatedAt = res.CreatedAt
 		updateResponse.UpdatedAt = res.UpdatedAt
-		updateResponse.DeletedAt = res.DeletedAt
 
 		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", updateResponse))
-	}
-}
-
-// Delete Product
-func (pc *ProductsController) DeleteProduct() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		var paramId = c.Param("id")
-
-		success, errQuery := pc.model.Delete(paramId)
-		if !success {
-			return c.JSON(http.StatusNotFound, helper.FormatResponse("Product not found", errQuery))
-		}
-
-		return c.JSON(http.StatusOK, helper.FormatResponse("Success delete Product", nil))
 	}
 }
 
@@ -174,30 +164,9 @@ func (pc *ProductsController) SearchProduct() echo.HandlerFunc {
 		offset, _ := strconv.Atoi(c.QueryParam("offset"))
 		products, err := pc.model.SearchProduct(keyword, limit, offset)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot search category products, something happened", err))
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot search category products, something happened", err.Error()))
 		}
 
-		var searchResponse []response.ProductResponse
-
-		for _, product := range products {
-			searchResponse = append(searchResponse, response.ProductResponse{
-				Id:            product.Id,
-				Name:          product.Name,
-				Photo:         product.Photo,
-				IdCatProduct:  product.IdCatProduct,
-				MfDate:        product.MfDate,
-				ExpDate:       product.ExpDate,
-				BatchNumber:   product.BatchNumber,
-				UnitPrice:     product.UnitPrice,
-				Stock:         product.Stock,
-				Description:   product.Description,
-				IdDistributor: product.IdDistributor,
-				CreatedAt:     product.CreatedAt,
-				UpdatedAt:     product.UpdatedAt,
-				DeletedAt:     product.DeletedAt,
-			})
-		}
-
-		return c.JSON(http.StatusOK, helper.FormatResponse("Search category product success", searchResponse))
+		return c.JSON(http.StatusOK, helper.FormatResponse("Search category product success", products))
 	}
 }
