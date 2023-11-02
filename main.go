@@ -19,14 +19,20 @@ func main() {
 	models.Migrate(db)
 
 	userModel := models.NewUsersModel(db)
-	// catProductModel := models.NewCatProductsModel(db)
-	// distributorModel := models.NewDistributorsModel(db)
-	// reqProductModel := models.NewReqProductsModel(db)
+	catProductModel := models.NewCatProductsModel(db)
+	distributorModel := models.NewDistributorsModel(db)
+	reqProductModel := models.NewReqProductsModel(db)
+	transactionModel := models.NewTransactionsModel(db)
+	productModel := models.NewProductsModel(db)
+	detailTransactionModel := models.NewDetailTransactionsModel(db)
 
 	userController := controllers.NewUsersControlInterface(userModel)
-	// catProductController := controllers.NewCatProductControllerInterface(catProductModel)
-	// distributorController := controllers.NewDistributorControllerInterface(distributorModel)
-	// reqProductController := controllers.NewReqProductControllerInterface(reqProductModel)
+	catProductController := controllers.NewCatProductsControllerInterface(catProductModel)
+	distributorController := controllers.NewDistributorControllerInterface(distributorModel)
+	reqProductController := controllers.NewReqProductsControllerInterface(reqProductModel)
+	transactionController := controllers.NewTransactionsControllerInterface(transactionModel)
+	productController := controllers.NewProductsControllerInterface(productModel)
+	detailTransactionController := controllers.NewDetailTransactionsControllerInterface(detailTransactionModel)
 
 	e.Pre(middleware.RemoveTrailingSlash())
 
@@ -37,9 +43,12 @@ func main() {
 		}))
 
 	routes.RouteUser(e, userController, *config)
-	// routes.RouteCatProduct(e, catProductController, *config)
-	// routes.RouteDistributor(e, distributorController, *config)
-	// routes.RouteReqProduct(e, reqProductController, *config)
+	routes.RouteCatProduct(e, catProductController, *config)
+	routes.RouteDistributor(e, distributorController, *config)
+	routes.RouteReqProduct(e, reqProductController, *config)
+	routes.RouteTransaction(e, transactionController, *config)
+	routes.RouteProduct(e, productController, *config)
+	routes.RouteDetailTransaction(e, detailTransactionController, *config)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", config.ServerPort)).Error())
 }

@@ -6,34 +6,34 @@ import (
 	"pharm-stock/helper/authentication"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
+// Struct Users
 type Users struct {
-	Id           string         `gorm:"primaryKey;type:varchar(10)"`
-	Name         string         `gorm:"type:varchar(100);not null"`
-	Username     string         `gorm:"type:varchar(50);not null" valid:"required~your user name is required"`
-	Password     string         `gorm:"type:text;not null" valid:"required~your password is required,minstringlength(8)~Password has to have a minimum length of 6 characters"`
-	Email        string         `gorm:"type:varchar(50);not null" valid:"required~your email is required, email~invalid email format"`
-	Phone        string         `gorm:"type:varchar(15);not null" valid:"required~your phone is required"`
-	Address      string         `gorm:"type:varchar(255);not null"`
-	Role         string         `gorm:"type:ENUM('administrator','apoteker');not null"`
-	CreatedAt    time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP"`
-	UpdatedAt    time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP"`
-	DeletedAt    gorm.DeletedAt `gorm:"index"`
-	Transactions []Transactions `gorm:"foreignKey:id_employee;references:id"`
-	ReqProducts  []ReqProducts  `gorm:"foreignKey:id_employee;references:id"`
+	Id           string         `gorm:"primaryKey;type:varchar(10)" json:"id" form:"id"`
+	Name         string         `gorm:"type:varchar(100);not null" json:"name" form:"name"`
+	Username     string         `gorm:"type:varchar(50);not null" json:"username" form:"username"`
+	Password     string         `gorm:"type:text;not null" json:"password" form:"password"`
+	Email        string         `gorm:"type:varchar(50);not null" json:"email" form:"email"`
+	Phone        string         `gorm:"type:varchar(15);not null" json:"phone" form:"phone"`
+	Address      string         `gorm:"type:varchar(255);not null" json:"address" form:"address"`
+	Role         string         `gorm:"type:ENUM('administrator','apoteker');not null" json:"role" form:"role"`
+	CreatedAt    time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"created_at" form:"created_at"`
+	UpdatedAt    time.Time      `gorm:"type:timestamp DEFAULT CURRENT_TIMESTAMP" json:"updated_at" form:"updated_at"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"deleted_at" form:"deleted_at"`
+	Transactions []Transactions `gorm:"foreignKey:id_employee;references:id" json:"history_transaction" form:"history_transaction"`
+	ReqProducts  []ReqProducts  `gorm:"foreignKey:id_employee;references:id" json:"history_request_product" form:"history_request_product"`
 }
 
 // Interface beetween models and controller
 type UsersModelInterface interface {
-	Login(username string, password string) (*Users, error)
+	Login(username string) (*Users, error)
 	Insert(newItem Users) (*Users, error)
 	SelectAll(limit, offset int) ([]Users, error)
 	Update(updatedData Users) (*Users, error)
 	Delete(userId string) (bool, error)
-	SearchUsers(keyword string) ([]Users, error)
+	SearchUsers(keyword string, limit int, offset int) ([]Users, error)
 	InsertAdmin(newItem Users) (*Users, error)
 }
 
@@ -50,12 +50,11 @@ func NewUsersModel(db *gorm.DB) UsersModelInterface {
 }
 
 // Login
-func (um *UsersModel) Login(username string, password string) (*Users, error) {
+func (um *UsersModel) Login(username string) (*Users, error) {
 	var data = Users{}
 	if err := um.db.Where("username = ?", username).First(&data).Error; err != nil {
 		return nil, errors.New("Error user login, " + err.Error())
 	}
-
 	if data.Id == "" {
 		return nil, errors.New("User not found")
 	}
@@ -65,46 +64,61 @@ func (um *UsersModel) Login(username string, password string) (*Users, error) {
 
 // Insert User
 func (um *UsersModel) Insert(newUser Users) (*Users, error) {
-	var latestUser Users
-	if errFilter := um.db.Order("id DESC").First(&latestUser).Error; errFilter != nil {
-		return nil, errors.New("Error filter data, " + errFilter.Error())
-	}
-
-	newID := generateNewID(latestUser.Id)
-	if newID == "" {
-		return nil, errors.New("Failed generate Id")
-	}
-
-	newUser.Id = newID
-	newUser.Role = "apoteker"
-
-	validate := validate(newUser)
-	if !validate {
-		return nil, errors.New("Data not valid")
-	}
-
-	if checkUsername := um.db.Where("username = ?", newUser.Username).First(&newUser).Error; checkUsername != nil {
-		if checkUsername == gorm.ErrRecordNotFound {
-			if err := um.db.Create(&newUser).Error; err != nil {
-				return nil, errors.New("Error insert user, " + err.Error())
-			}
-		} else {
+	var existingUser Users
+	if err := um.db.Where("username = ?", newUser.Username).First(&existingUser).Error; err != nil {
+		if err != gorm.ErrRecordNotFound {
 			return nil, errors.New("Error checking username availability")
 		}
-	} else {
-		return nil, errors.New("Username already exists")
 	}
 
-	return &newUser, nil
+	if existingUser.Id == "" {
+		tx := um.db.Begin()
+		var latestUser Users
+		if errSort := tx.Unscoped().Order("id DESC").First(&latestUser).Error; errSort != nil {
+			latestUser.Id = "USR-0000"
+		}
+
+		newID := generateUserId(latestUser.Id)
+		if newID == "" {
+			tx.Rollback() 
+			return nil, errors.New("Failed to generate ID")
+		}
+
+		newUser.Id = newID
+		newUser.Role = "apoteker"
+
+		validate, errValidate := validateUser(newUser)
+		if !validate {
+			tx.Rollback()
+			return nil, errValidate
+		}
+
+		if err := tx.Create(&newUser).Error; err != nil {
+			tx.Rollback()
+			return nil, errors.New("Error inserting user, " + err.Error())
+		}
+
+		tx.Commit()
+		return &newUser, nil
+	}
+
+	return nil, errors.New("Username already exists")
 }
+
 
 // Select All User
 func (um *UsersModel) SelectAll(limit, offset int) ([]Users, error) {
 	var data []Users
-	if err := um.db.Limit(limit).Offset(offset).Find(&data).Error; err != nil {
-		logrus.Error("Cannot get all users, ", err.Error())
-		return nil, err
+
+	if err := um.db.
+		Limit(limit).
+		Offset(offset).
+		Preload("Transactions").
+		Preload("ReqProducts").
+		Find(&data).Error; err != nil {
+		return nil, errors.New("Cannot get users with transactions and req_products, " + err.Error())
 	}
+
 	return data, nil
 }
 
@@ -119,9 +133,9 @@ func (um *UsersModel) Update(updatedData Users) (*Users, error) {
 		data["username"] = updatedData.Username
 	}
 	if updatedData.Password != "" {
-		hashedPassword, err := authentication.HashPassword(updatedData.Password)
-		if err != nil {
-			return nil, errors.New("Cannot process data, something happened. " + err.Error())
+		hashedPassword, errHash := authentication.HashPassword(updatedData.Password)
+		if errHash != nil {
+			return nil, errors.New("Cannot hash password, something happened. " + errHash.Error())
 		}
 		data["password"] = hashedPassword
 	}
@@ -135,6 +149,9 @@ func (um *UsersModel) Update(updatedData Users) (*Users, error) {
 		data["address"] = updatedData.Address
 	}
 	if updatedData.Role != "" {
+		if updatedData.Role != "apoteker" && updatedData.Role != "administrator" {
+			return nil, errors.New("Role is not in the correct format.")
+		}
 		data["role"] = updatedData.Role
 	}
 
@@ -172,11 +189,14 @@ func (um *UsersModel) Delete(userId string) (bool, error) {
 }
 
 // Searching
-func (um *UsersModel) SearchUsers(keyword string) ([]Users, error) {
+func (um *UsersModel) SearchUsers(keyword string, limit int, offset int) ([]Users, error) {
 	var users []Users
-	query := um.db.Where("id LIKE ? OR name LIKE ? OR username LIKE ? OR password LIKE ? OR email LIKE ? OR phone LIKE ? OR address LIKE ? OR role LIKE ? OR created_at LIKE ? OR updated_at LIKE ? OR deleted_at LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
+	query := um.db.Limit(limit).Offset(offset).Where("id LIKE ? OR name LIKE ? OR username LIKE ? OR password LIKE ? OR email LIKE ? OR phone LIKE ? OR address LIKE ? OR role LIKE ? OR created_at LIKE ? OR updated_at LIKE ? OR deleted_at LIKE ?", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%", "%"+keyword+"%")
 
-	if err := query.Find(&users).Error; err != nil {
+	if err := query.
+		Preload("Transactions").
+		Preload("ReqProducts").
+		Find(&users).Error; err != nil {
 		return nil, errors.New("Error search data, " + err.Error())
 	}
 
@@ -188,9 +208,9 @@ func (um *UsersModel) InsertAdmin(newUser Users) (*Users, error) {
 	newUser.Id = "USR-0001"
 	newUser.Role = "administrator"
 
-	validate := validate(newUser)
+	validate, errValidate := validateUser(newUser)
 	if !validate {
-		return nil, errors.New("The data must not be empty and should adhere to the specified format")
+		return nil, errValidate
 	}
 
 	if checkUsername := um.db.Where("username = ?", newUser.Username).First(&newUser).Error; checkUsername != nil {
@@ -209,7 +229,7 @@ func (um *UsersModel) InsertAdmin(newUser Users) (*Users, error) {
 }
 
 // Generate Id
-func generateNewID(latestID string) string {
+func generateUserId(latestID string) string {
 	var numID int
 	if _, err := fmt.Sscanf(latestID, "USR-%04d", &numID); err != nil {
 		return ""
@@ -219,39 +239,31 @@ func generateNewID(latestID string) string {
 }
 
 // Validate
-func validate(user Users) bool {
+func validateUser(user Users) (bool, error) {
 	if user.Id == "" || len(user.Id) > 10 {
-		logrus.Error("Model: Id is required and must be up to 10 characters")
-		return false
+		return false, errors.New("Id is required and must be up to 10 characters")
 	}
 	if user.Name == "" || len(user.Name) > 100 {
-		logrus.Error("Model: Name is required and must be up to 100 characters")
-		return false
+		return false, errors.New("Name is required and must be up to 100 characters")
 	}
 	if user.Username == "" || len(user.Username) > 50 {
-		logrus.Error("Model: Username is required and must be up to 50 characters")
-		return false
+		return false, errors.New("Username is required and must be up to 50 characters")
 	}
 	if user.Password == "" {
-		logrus.Error("Model: Password is required and must be up to 25 characters")
-		return false
+		return false, errors.New("Password is required")
 	}
 	if user.Email == "" || len(user.Email) > 50 {
-		logrus.Error("Model: Email is required and must be up to 50 characters")
-		return false
+		return false, errors.New("Email is required and must be up to 50 characters")
 	}
 	if user.Phone == "" || len(user.Phone) > 15 {
-		logrus.Error("Model: Phone is required and must be up to 15 characters")
-		return false
+		return false, errors.New("Phone is required and must be up to 15 characters")
 	}
 	if user.Address == "" || len(user.Address) > 255 {
-		logrus.Error("Model: Address is required and must be up to 255 characters")
-		return false
+		return false, errors.New("Address is required and must be up to 255 characters")
 	}
 	if user.Role == "" || (user.Role != "administrator" && user.Role != "apoteker") {
-		logrus.Error("Model: Role is required and must be 'administrator' or 'apoteker'")
-		return false
+		return false, errors.New("Role is required and must be 'administrator' or 'apoteker'")
 	}
 
-	return true
+	return true, nil
 }

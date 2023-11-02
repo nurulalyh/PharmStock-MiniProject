@@ -1,118 +1,170 @@
 package controllers
 
-// import (
-// 	"net/http"
-// 	"pharm-stock/configs"
-// 	"pharm-stock/helper"
-// 	"pharm-stock/models"
-// 	"strconv"
+import (
+	"net/http"
+	"pharm-stock/configs"
+	"pharm-stock/helper"
+	"pharm-stock/helper/authentication"
+	"pharm-stock/models"
+	"pharm-stock/utils/request"
+	"pharm-stock/utils/response"
+	"strconv"
 
-// 	"github.com/labstack/echo/v4"
-// )
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/labstack/echo/v4"
+)
 
-// type ReqProductControllerInterface interface {
-// 	CreateReqProduct() echo.HandlerFunc
-// 	GetAllReqProduct() echo.HandlerFunc
-// 	GetReqProductById() echo.HandlerFunc
-// 	UpdateReqProduct() echo.HandlerFunc
-// 	DeleteReqProduct() echo.HandlerFunc
-// }
+// Interface beetween controller and routes
+type ReqProductsControllerInterface interface {
+	CreateReqProduct() echo.HandlerFunc
+	GetAllReqProduct() echo.HandlerFunc
+	UpdateReqProduct() echo.HandlerFunc
+	SearchReqProduct() echo.HandlerFunc
+}
 
-// type ReqProductController struct {
-// 	config configs.Config
-// 	model  models.ReqProductModelInterface
-// }
+// Connect into db and model
+type ReqProductsController struct {
+	config configs.Config
+	model  models.ReqProductsModelInterface
+}
 
-// func NewReqProductControllerInterface(m models.ReqProductModelInterface) ReqProductControllerInterface {
-// 	return &ReqProductController{
-// 		model: m,
-// 	}
-// }
+// Create new instance from ReqProductsController
+func NewReqProductsControllerInterface(m models.ReqProductsModelInterface) ReqProductsControllerInterface {
+	return &ReqProductsController{
+		model: m,
+	}
+}
 
-// func (rpc *ReqProductController) CreateReqProduct() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 		var input = models.ReqProduct{}
-// 		if err := c.Bind(&input); err != nil {
-// 			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Request Product input", nil))
-// 		}
+// Create Request Product
+func (rpc *ReqProductsController) CreateReqProduct() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		userToken := c.Get("user").(*jwt.Token)
 
-// 		var res = rpc.model.Insert(input)
-// 		if res == nil {
-// 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", nil))
-// 		}
+		if userToken != nil && userToken.Valid {
+			tokenData, err := authentication.ExtractToken(userToken)
+			if err != nil {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Invalid token", err.Error()))
+			}
 
-// 		return c.JSON(http.StatusCreated, helper.FormatResponse("success create Request Product", res))
-// 	}
-// }
+			role, ok := tokenData["role"].(string)
+			if !ok {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Role information missing in the token", nil))
+			}
 
-// func (rpc *ReqProductController) GetAllReqProduct() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 		var res = rpc.model.SelectAll()
+			if role != "apoteker" {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("You don't have permission", nil))
+			}
 
-// 		if res == nil {
-// 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all Request Product, ", nil))
-// 		}
+			var input = request.InsertReqProductRequest{}
+			if errBind := c.Bind(&input); errBind != nil {
+				return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Request Product input", errBind.Error()))
+			}
+	
+			var newReqProduct = models.ReqProducts{}
+			newReqProduct.IdEmployee = input.IdEmployee
+			newReqProduct.ProductName = input.ProductName
+			newReqProduct.Quantity = input.Quantity
+			newReqProduct.Note = input.Note
+	
+			var res, errQuery = rpc.model.Insert(newReqProduct)
+			if res == nil {
+				return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", errQuery.Error()))
+			}
+	
+			var insertResponse = response.InsertReqProductResponse{}
+			insertResponse.Id = res.Id
+			insertResponse.IdEmployee = res.IdEmployee
+			insertResponse.ProductName = res.ProductName
+			insertResponse.Quantity = res.Quantity
+			insertResponse.Note = res.Note
+			insertResponse.StatusReq = res.StatusReq
+			insertResponse.CreatedAt = res.CreatedAt
+	
+			return c.JSON(http.StatusCreated, helper.FormatResponse("success create Request Product", insertResponse))
+		}
+		return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Unauthorized access", nil))
+	}
+}
 
-// 		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all Request Product, ", res))
-// 	}
-// }
+// Get All Request Prodct
+func (rpc *ReqProductsController) GetAllReqProduct() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		limit, _ := strconv.Atoi(c.QueryParam("limit"))
+		offset, _ := strconv.Atoi(c.QueryParam("offset"))
 
-// func (rpc *ReqProductController) GetReqProductById() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 		var paramId = c.Param("id")
+		var res, err = rpc.model.SelectAll(limit, offset)
+		if res == nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get all Request Product, ", err.Error()))
+		}
 
-// 		cnv, err := strconv.Atoi(paramId)
-// 		if err != nil {
-// 			return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
-// 		}
+		return c.JSON(http.StatusOK, helper.FormatResponse("Success get all Request Product, ", res))
+	}
+}
 
-// 		var res = rpc.model.SelectById(cnv)
-// 		if res == nil {
-// 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Error get Request Product by id, ", nil))
-// 		}
+// Update Request Product
+func (rpc *ReqProductsController) UpdateReqProduct() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		userToken := c.Get("user").(*jwt.Token)
 
-// 		return c.JSON(http.StatusOK, helper.FormatResponse("Success get Request Product", res))
-// 	}
-// }
+		if userToken != nil && userToken.Valid {
+			tokenData, err := authentication.ExtractToken(userToken)
+			if err != nil {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Invalid token", err.Error()))
+			}
 
-// func (rpc *ReqProductController) UpdateReqProduct() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 		var paramId = c.Param("id")
-// 		cnv, err := strconv.Atoi(paramId)
-// 		if err != nil {
-// 			return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
-// 		}
+			role, ok := tokenData["role"].(string)
+			if !ok {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Role information missing in the token", nil))
+			}
 
-// 		var input = models.ReqProduct{}
-// 		if err := c.Bind(&input); err != nil {
-// 			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Request Product input", nil))
-// 		}
+			if role != "administrator" {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("You don't have permission", nil))
+			}
 
-// 		input.Id = cnv
+			var paramId = c.Param("id")
+			var input = request.UpdateReqProductRequest{}
+			if errBind := c.Bind(&input); errBind != nil {
+				return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid Request Product input", errBind.Error()))
+			}
+	
+			input.Id = paramId
+	
+			update := models.ReqProducts{}
+			update.Id = input.Id
+			update.StatusReq = input.StatusReq
+	
+			var res, errQuery = rpc.model.Update(update)
+			if res == nil {
+				return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", errQuery.Error()))
+			}
+	
+			updateResponse := response.UpdateReqProductResponse{}
+			updateResponse.Id = res.Id
+			updateResponse.IdEmployee = res.IdEmployee
+			updateResponse.ProductName = res.ProductName
+			updateResponse.Quantity = res.Quantity
+			updateResponse.Note = res.Note
+			updateResponse.StatusReq = res.StatusReq
+			updateResponse.CreatedAt = res.CreatedAt
+			updateResponse.UpdatedAt = res.UpdatedAt
+	
+			return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", updateResponse))
+		}
+		return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Unauthorized access", nil))
+	}
+}
 
-// 		var res = rpc.model.Update(input)
-// 		if res == nil {
-// 			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", nil))
-// 		}
+// Searching
+func (rpc *ReqProductsController) SearchReqProduct() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		keyword := c.QueryParam("keyword")
+		limit, _ := strconv.Atoi(c.QueryParam("limit"))
+		offset, _ := strconv.Atoi(c.QueryParam("offset"))
+		reqProducts, errQuery := rpc.model.SearchReqProduct(keyword, limit, offset)
+		if errQuery != nil {
+			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot search category products, something happened", errQuery.Error()))
+		}
 
-// 		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", res))
-// 	}
-// }
-
-// func (rpc *ReqProductController) DeleteReqProduct() echo.HandlerFunc {
-// 	return func(c echo.Context) error {
-// 	  var paramId = c.Param("id")
-  
-// 	  cnv, err := strconv.Atoi(paramId)
-// 	  if err != nil {
-// 		return c.JSON(http.StatusBadRequest, helper.FormatResponse("Invalid id", nil))
-// 	  }
-  
-// 	  success := rpc.model.Delete(cnv)
-// 	  if !success {
-// 		return c.JSON(http.StatusNotFound, helper.FormatResponse("Request Product not found", nil))
-// 	  }
-  
-// 	  return c.JSON(http.StatusOK, helper.FormatResponse("Success delete Request Product", nil))
-// 	}
-// }
+		return c.JSON(http.StatusOK, helper.FormatResponse("Search category product success", reqProducts))
+	}
+}
