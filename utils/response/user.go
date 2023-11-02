@@ -10,7 +10,6 @@ type LoginResponse struct {
 	Username     string `json:"username" form:"username"`
 	Role         string `json:"role" form:"role"`
 	Token        any    `json:"token" form:"token"`
-	RefreshToken any    `json:"refresh_token" form:"refresh_token"`
 }
 
 type InsertUsersResponse struct {

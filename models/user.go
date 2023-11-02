@@ -64,38 +64,47 @@ func (um *UsersModel) Login(username string) (*Users, error) {
 
 // Insert User
 func (um *UsersModel) Insert(newUser Users) (*Users, error) {
-	var latestUser Users
-	if errSort := um.db.Unscoped().Order("id DESC").First(&latestUser).Error; errSort != nil {
-		latestUser.Id = "USR-0000"
-	}
-
-	newID := generateUserId(latestUser.Id)
-	if newID == "" {
-		return nil, errors.New("Failed generate Id")
-	}
-
-	newUser.Id = newID
-	newUser.Role = "apoteker"
-
-	validate, errValidate := validateUser(newUser)
-	if !validate {
-		return nil, errValidate
-	}
-
-	if checkUsername := um.db.Where("username = ?", newUser.Username).First(&newUser).Error; checkUsername != nil {
-		if checkUsername == gorm.ErrRecordNotFound {
-			if err := um.db.Create(&newUser).Error; err != nil {
-				return nil, errors.New("Error insert user, " + err.Error())
-			}
-		} else {
+	var existingUser Users
+	if err := um.db.Where("username = ?", newUser.Username).First(&existingUser).Error; err != nil {
+		if err != gorm.ErrRecordNotFound {
 			return nil, errors.New("Error checking username availability")
 		}
-	} else {
-		return nil, errors.New("Username already exists")
 	}
 
-	return &newUser, nil
+	if existingUser.Id == "" {
+		tx := um.db.Begin()
+		var latestUser Users
+		if errSort := tx.Unscoped().Order("id DESC").First(&latestUser).Error; errSort != nil {
+			latestUser.Id = "USR-0000"
+		}
+
+		newID := generateUserId(latestUser.Id)
+		if newID == "" {
+			tx.Rollback() 
+			return nil, errors.New("Failed to generate ID")
+		}
+
+		newUser.Id = newID
+		newUser.Role = "apoteker"
+
+		validate, errValidate := validateUser(newUser)
+		if !validate {
+			tx.Rollback()
+			return nil, errValidate
+		}
+
+		if err := tx.Create(&newUser).Error; err != nil {
+			tx.Rollback()
+			return nil, errors.New("Error inserting user, " + err.Error())
+		}
+
+		tx.Commit()
+		return &newUser, nil
+	}
+
+	return nil, errors.New("Username already exists")
 }
+
 
 // Select All User
 func (um *UsersModel) SelectAll(limit, offset int) ([]Users, error) {
@@ -126,7 +135,7 @@ func (um *UsersModel) Update(updatedData Users) (*Users, error) {
 	if updatedData.Password != "" {
 		hashedPassword, errHash := authentication.HashPassword(updatedData.Password)
 		if errHash != nil {
-			return nil, errors.New("Cannot process data, something happened. " + errHash.Error())
+			return nil, errors.New("Cannot hash password, something happened. " + errHash.Error())
 		}
 		data["password"] = hashedPassword
 	}

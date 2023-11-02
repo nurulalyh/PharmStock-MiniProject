@@ -4,11 +4,13 @@ import (
 	"net/http"
 	"pharm-stock/configs"
 	"pharm-stock/helper"
+	"pharm-stock/helper/authentication"
 	"pharm-stock/models"
 	"pharm-stock/utils/request"
 	"pharm-stock/utils/response"
 	"strconv"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 )
 
@@ -37,25 +39,44 @@ func NewCatProductsControllerInterface(m models.CatProductsModelInterface) CatPr
 // Create Category Product
 func (cpc *CatProductsController) CreateCatProduct() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var input = request.CategoryProductRequest{}
-		if errBind := c.Bind(&input); errBind != nil {
-			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid category product input", errBind.Error()))
+		userToken := c.Get("user").(*jwt.Token)
+
+		if userToken != nil && userToken.Valid {
+			tokenData, err := authentication.ExtractToken(userToken)
+			if err != nil {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Invalid token", err.Error()))
+			}
+
+			role, ok := tokenData["role"].(string)
+			if !ok {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Role information missing in the token", nil))
+			}
+
+			if role != "administrator" {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("You don't have permission", nil))
+			}
+
+			var input = request.CategoryProductRequest{}
+			if errBind := c.Bind(&input); errBind != nil {
+				return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid category product input", errBind.Error()))
+			}
+	
+			var newCatProduct = models.CatProducts{}
+			newCatProduct.Name = input.Name
+	
+			var res, errQuery = cpc.model.Insert(newCatProduct)
+			if res == nil {
+				return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", errQuery.Error()))
+			}
+	
+			var insertResponse = response.InsertCatProductsResponse{}
+			insertResponse.Id = res.Id
+			insertResponse.Name = res.Name
+			insertResponse.CreatedAt = res.CreatedAt
+	
+			return c.JSON(http.StatusCreated, helper.FormatResponse("success create category product", insertResponse))
 		}
-
-		var newCatProduct = models.CatProducts{}
-		newCatProduct.Name = input.Name
-
-		var res, errQuery = cpc.model.Insert(newCatProduct)
-		if res == nil {
-			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("Cannot process data, something happend", errQuery.Error()))
-		}
-
-		var insertResponse = response.InsertCatProductsResponse{}
-		insertResponse.Id = res.Id
-		insertResponse.Name = res.Name
-		insertResponse.CreatedAt = res.CreatedAt
-
-		return c.JSON(http.StatusCreated, helper.FormatResponse("success create category product", insertResponse))
+		return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Unauthorized access", nil))
 	}
 }
 
@@ -77,40 +98,78 @@ func (cpc *CatProductsController) GetAllCatProduct() echo.HandlerFunc {
 // Update Category Product
 func (cpc *CatProductsController) UpdateCatProduct() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var paramId = c.Param("id")
-		var input = models.CatProducts{}
-		if errBind := c.Bind(&input); errBind != nil {
-			return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid category product input", errBind.Error()))
+		userToken := c.Get("user").(*jwt.Token)
+
+		if userToken != nil && userToken.Valid {
+			tokenData, err := authentication.ExtractToken(userToken)
+			if err != nil {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Invalid token", err.Error()))
+			}
+
+			role, ok := tokenData["role"].(string)
+			if !ok {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Role information missing in the token", nil))
+			}
+
+			if role != "administrator" {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("You don't have permission", nil))
+			}
+
+			var paramId = c.Param("id")
+			var input = models.CatProducts{}
+			if errBind := c.Bind(&input); errBind != nil {
+				return c.JSON(http.StatusBadRequest, helper.FormatResponse("invalid category product input", errBind.Error()))
+			}
+	
+			input.Id = paramId
+	
+			var res, errQuery = cpc.model.Update(input)
+			if res == nil {
+				return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", errQuery.Error()))
+			}
+	
+			updateResponse := response.UpdateCatProductsResponse{}
+			updateResponse.Id = res.Id
+			updateResponse.Name = res.Name
+			updateResponse.CreatedAt = res.CreatedAt
+			updateResponse.UpdatedAt = res.UpdatedAt
+	
+			return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", updateResponse))
 		}
-
-		input.Id = paramId
-
-		var res, errQuery = cpc.model.Update(input)
-		if res == nil {
-			return c.JSON(http.StatusInternalServerError, helper.FormatResponse("cannot process data, something happend", errQuery.Error()))
-		}
-
-		updateResponse := response.UpdateCatProductsResponse{}
-		updateResponse.Id = res.Id
-		updateResponse.Name = res.Name
-		updateResponse.CreatedAt = res.CreatedAt
-		updateResponse.UpdatedAt = res.UpdatedAt
-		
-		return c.JSON(http.StatusOK, helper.FormatResponse("Success update data", updateResponse))
+		return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Unauthorized access", nil))
 	}
 }
 
 // Delete Category Product
 func (cpc *CatProductsController) DeleteCatProduct() echo.HandlerFunc {
 	return func(c echo.Context) error {
-	  var paramId = c.Param("id")
+		userToken := c.Get("user").(*jwt.Token)
 
-	  success, errQuery := cpc.model.Delete(paramId)
-	  if !success {
-		return c.JSON(http.StatusNotFound, helper.FormatResponse("Category product not found", errQuery.Error()))
-	  }
+		if userToken != nil && userToken.Valid {
+			tokenData, err := authentication.ExtractToken(userToken)
+			if err != nil {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Invalid token", err.Error()))
+			}
 
-	  return c.JSON(http.StatusOK, helper.FormatResponse("Success delete category product", nil))
+			role, ok := tokenData["role"].(string)
+			if !ok {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Role information missing in the token", nil))
+			}
+
+			if role != "administrator" {
+				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("You don't have permission", nil))
+			}
+			
+			var paramId = c.Param("id")
+	
+			success, errQuery := cpc.model.Delete(paramId)
+			if !success {
+				return c.JSON(http.StatusNotFound, helper.FormatResponse("Category product not found", errQuery.Error()))
+			}
+	
+			return c.JSON(http.StatusOK, helper.FormatResponse("Success delete category product", nil))
+		}
+		return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Unauthorized access", nil))
 	}
 }
 
