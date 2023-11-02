@@ -66,9 +66,6 @@ func loadConfig() *Config {
 		res.Secret = val
 	}
 
-	if val, found := os.LookupEnv("REFSECRET"); found {
-		res.RefreshSecret = val
-	}
 	if val, found := os.LookupEnv("OPENAI_API_KEY"); found {
 		res.OpenAIKey = val
 	}
