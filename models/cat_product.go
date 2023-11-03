@@ -41,36 +41,44 @@ func NewCatProductsModel(db *gorm.DB) CatProductsModelInterface {
 
 // Insert Category Product
 func (cpm *CatProductsModel) Insert(newCatProduct CatProducts) (*CatProducts, error) {
-	var latestCatProduct CatProducts
-	if errSort := cpm.db.Unscoped().Order("id DESC").First(&latestCatProduct).Error; errSort != nil {
-		latestCatProduct.Id = "CPT-0000"
-	}
-
-	newID := generateCatProductId(latestCatProduct.Id)
-	if newID == "" {
-		return nil, errors.New("Failed generate Id")
-	}
-
-	newCatProduct.Id = newID
-
-	validate, errValidate := validateCatProduct(newCatProduct)
-	if !validate {
-		return nil, errValidate
-	}
-
-	if checkName := cpm.db.Where("name = ?", newCatProduct.Name).First(&newCatProduct).Error; checkName != nil {
-		if checkName == gorm.ErrRecordNotFound {
-			if err := cpm.db.Create(&newCatProduct).Error; err != nil {
-				return nil, errors.New("Error insert category product, " + err.Error())
-			}
-		} else {
+	var existingCatProduct CatProducts
+	if err := cpm.db.Where("name = ?", newCatProduct.Name).First(&existingCatProduct).Error; err != nil {
+		if err != gorm.ErrRecordNotFound {
 			return nil, errors.New("Error checking category product availability")
 		}
-	} else {
-		return nil, errors.New("Category product already exists")
 	}
 
-	return &newCatProduct, nil
+	if existingCatProduct.Id == "" {
+		tx := cpm.db.Begin()
+		var latestCatProduct CatProducts
+		if errSort := tx.Unscoped().Order("id DESC").First(&latestCatProduct).Error; errSort != nil {
+			latestCatProduct.Id = "CPT-0000"
+		}
+
+		newID := generateCatProductId(latestCatProduct.Id)
+		if newID == "" {
+			tx.Rollback()
+			return nil, errors.New("Failed to generate ID")
+		}
+
+		newCatProduct.Id = newID
+		
+		validate, errValidate := validateCatProduct(newCatProduct)
+		if !validate {
+			tx.Rollback()
+			return nil, errValidate
+		}
+
+		if err := tx.Create(&newCatProduct).Error; err != nil {
+			tx.Rollback()
+			return nil, errors.New("Error inserting category product, " + err.Error())
+		}
+
+		tx.Commit()
+		return &newCatProduct, nil
+	}
+
+	return nil, errors.New("Category product already exists")
 }
 
 // Select All Category Product
