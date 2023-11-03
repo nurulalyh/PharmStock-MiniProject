@@ -80,10 +80,7 @@ func (uc *UsersController) CreateUser() echo.HandlerFunc {
 		userToken := c.Get("user").(*jwt.Token)
 
 		if userToken != nil && userToken.Valid {
-			tokenData, err := authentication.ExtractToken(userToken)
-			if err != nil {
-				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Invalid token", err.Error()))
-			}
+			tokenData, _ := authentication.ExtractToken(userToken)
 
 			role, ok := tokenData["role"].(string)
 			if !ok {
