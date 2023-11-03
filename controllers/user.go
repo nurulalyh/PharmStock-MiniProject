@@ -136,11 +136,8 @@ func (uc *UsersController) GetAllUsers() echo.HandlerFunc {
 		userToken := c.Get("user").(*jwt.Token)
 
 		if userToken != nil && userToken.Valid {
-			tokenData, err := authentication.ExtractToken(userToken)
-			if err != nil {
-				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Invalid token", err.Error()))
-			}
-
+			tokenData, _ := authentication.ExtractToken(userToken)
+			
 			role, ok := tokenData["role"].(string)
 			if !ok {
 				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Role information missing in the token", nil))
@@ -170,10 +167,7 @@ func (uc *UsersController) UpdateUser() echo.HandlerFunc {
 		userToken := c.Get("user").(*jwt.Token)
 
 		if userToken != nil && userToken.Valid {
-			tokenData, err := authentication.ExtractToken(userToken)
-			if err != nil {
-				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Invalid token", err.Error()))
-			}
+			tokenData, _ := authentication.ExtractToken(userToken)
 
 			role, ok := tokenData["role"].(string)
 			if !ok {
@@ -221,11 +215,8 @@ func (uc *UsersController) DeleteUser() echo.HandlerFunc {
 		userToken := c.Get("user").(*jwt.Token)
 
 		if userToken != nil && userToken.Valid {
-			tokenData, err := authentication.ExtractToken(userToken)
-			if err != nil {
-				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Invalid token", err.Error()))
-			}
-
+			tokenData, _ := authentication.ExtractToken(userToken)
+			
 			role, ok := tokenData["role"].(string)
 			if !ok {
 				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Role information missing in the token", nil))
@@ -253,11 +244,8 @@ func (uc *UsersController) SearchUsers() echo.HandlerFunc {
 		userToken := c.Get("user").(*jwt.Token)
 
 		if userToken != nil && userToken.Valid {
-			tokenData, err := authentication.ExtractToken(userToken)
-			if err != nil {
-				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Invalid token", err.Error()))
-			}
-
+			tokenData, _ := authentication.ExtractToken(userToken)
+	
 			role, ok := tokenData["role"].(string)
 			if !ok {
 				return c.JSON(http.StatusUnauthorized, helper.FormatResponse("Role information missing in the token", nil))
