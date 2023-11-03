@@ -41,36 +41,44 @@ func NewDistributorsModel(db *gorm.DB) DistributorModelInterface {
 
 // Insert Distributor
 func (dm *DistributorsModel) Insert(newDistributor Distributors) (*Distributors, error) {
-	var latestDistributor Distributors
-	if errSort := dm.db.Unscoped().Order("id DESC").First(&latestDistributor).Error; errSort != nil {
-		latestDistributor.Id = "DST-0000"
-	}
-
-	newID := generateDistributorId(latestDistributor.Id)
-	if newID == "" {
-		return nil, errors.New("Failed generate Id")
-	}
-
-	newDistributor.Id = newID
-
-	validate, errValidate := validateDistributor(newDistributor)
-	if !validate {
-		return nil, errValidate
-	}
-
-	if checkName := dm.db.Where("name = ?", newDistributor.Name).First(&newDistributor).Error; checkName != nil {
-		if checkName == gorm.ErrRecordNotFound {
-			if err := dm.db.Create(&newDistributor).Error; err != nil {
-				return nil, errors.New("Error insert distributor, " + err.Error())
-			}
-		} else {
-			return nil, errors.New("Error checking distributor name availability")
+	var exitingDistibutor Distributors
+	if err := dm.db.Where("name = ?", newDistributor.Name).First(&exitingDistibutor).Error; err != nil {
+		if err != gorm.ErrRecordNotFound {
+			return nil, errors.New("Error checking distributor availability")
 		}
-	} else {
-		return nil, errors.New("Distributor already exists")
 	}
 
-	return &newDistributor, nil
+	if exitingDistibutor.Id == "" {
+		tx := dm.db.Begin()
+		var latetDistributor Distributors
+		if errSort := tx.Unscoped().Order("id DESC").First(&latetDistributor).Error; errSort != nil {
+			latetDistributor.Id = "DST-0000"
+		}
+
+		newID := generateDistributorId(latetDistributor.Id)
+		if newID == "" {
+			tx.Rollback()
+			return nil, errors.New("Failed to generate ID")
+		}
+
+		newDistributor.Id = newID
+
+		validate, errValidate := validateDistributor(newDistributor)
+		if !validate {
+			tx.Rollback()
+			return nil, errValidate
+		}
+
+		if err := tx.Create(&newDistributor).Error; err != nil {
+			tx.Rollback()
+			return nil, errors.New("Error inserting distributor, " + err.Error())
+		}
+
+		tx.Commit()
+		return &newDistributor, nil
+	}
+
+	return nil, errors.New("distributor already exists")
 }
 
 // Select All Distributor
